@@ -11,6 +11,11 @@ queue *create_queue(int size) {
     return q;
 }
 
+void queue_reset(queue *q) {
+    q->first = -1;
+    q->last = -1;
+}
+
 void enqueue(queue *q, Point value) {
     if ((q->last + 1) % q->size == q->first) throw -1; // queue is full
 

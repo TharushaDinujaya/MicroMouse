@@ -1,11 +1,9 @@
+#include "types.h"
+
 #ifndef QUEUE_H
 #define QUEUE_H
 #define QUEUE_SIZE 100
 
-struct Point {
-    int x;
-    int y;
-};
 struct queue {
     Point* arr;
     int size;
@@ -14,6 +12,7 @@ struct queue {
 };
 
 queue *create_queue(int size = QUEUE_SIZE);
+void queue_reset(queue *q);
 void enqueue(queue *q, Point value);
 Point dequeue(queue *q);
 bool empty(queue *q);
