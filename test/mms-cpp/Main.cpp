@@ -23,6 +23,7 @@ Orient updateOrient(Orient currentOrient, int direction);
 void updateWalls(int **wallMap, int x, int y, Orient orient, int direction);
 void setWall(int **wallMap, int x, int y, int wall);
 bool isFinished(int x, int y);
+void printFloodMap(int** floodMap);
 
 void update_flood_map(int **floodMap, int** wallMap);
 
@@ -44,6 +45,7 @@ int main(int argc, char* argv[]) {
     Orient orient = NORTH;
     while (true) {
         update_flood_map(floodMap, wallMap);
+        printFloodMap(floodMap);
 
         int leftIndex = UNDEFINED, rightIndex = UNDEFINED, frontIndex = UNDEFINED;
         Point next = {-1, -1};
@@ -54,7 +56,6 @@ int main(int argc, char* argv[]) {
             Point p = getFloodIndex(floodMap, x, y, orient, LEFT);
             leftIndex = floodMap[p.x][p.y];
         } else {
-            log("left detected");
             // update the wall map
             updateWalls(wallMap, x, y, orient, LEFT);
         }
@@ -63,16 +64,16 @@ int main(int argc, char* argv[]) {
             Point p = getFloodIndex(floodMap, x, y, orient, RIGHT);
             rightIndex = floodMap[p.x][p.y];
         } else {
-            log("right detected");
             updateWalls(wallMap, x, y, orient, RIGHT);
+
         }
         // check FRONT
         if (!API::wallFront()) {
             Point p = getFloodIndex(floodMap, x, y, orient, FORWARD);
             frontIndex = floodMap[p.x][p.y];
         } else {
-            log("front detected");
             updateWalls(wallMap, x, y, orient, FORWARD);
+
         }
 
         // find the minimum flood index
@@ -184,9 +185,9 @@ void update_flood_map(int **floodMap, int** wallMap) {
     int middleY = API::mazeHeight() / 2;
     // add the middle 4 cells to the queue
     enqueue(q, {middleX, middleY});
-    enqueue(q, {middleX + 1, middleY});
-    enqueue(q, {middleX, middleY + 1});
-    enqueue(q, {middleX + 1, middleY + 1});
+    enqueue(q, {middleX - 1, middleY});
+    enqueue(q, {middleX, middleY - 1});
+    enqueue(q, {middleX - 1, middleY - 1});
 
     // run the while loop until the queue is not empty
     while (!empty(q)) {
@@ -320,6 +321,25 @@ Orient updateOrient(Orient currentOrient, int direction) {
 void setWall(int **wallMap, int x, int y, int wall) {
     if (x >= 0 && y >= 0 && x < API::mazeWidth() && y < API::mazeHeight())
         wallMap[x][y] |= wall;
+
+    // based on direction set the wall on the maze
+    switch (wall)
+    {
+    case WALL_LEFT:
+        API::setWall(x, y, 'w');
+        break;
+    case WALL_RIGHT:
+        API::setWall(x, y, 'e');
+        break;
+    case WALL_FRONT:
+        API::setWall(x, y, 'n');
+        break;
+    case WALL_BACK:
+        API::setWall(x, y, 's');
+        break;
+    default:
+        break;
+    }
 }
 
 void updateWalls(int **wallMap, int x, int y, Orient orient, int direction) {
@@ -393,4 +413,12 @@ bool isFinished(int x, int y) {
         return true;
     }
     return false;
+}
+
+void printFloodMap(int** floodMap) {
+    for (int i = 0; i < API::mazeWidth(); i++) {
+        for (int j = 0; j < API::mazeHeight(); j++) {
+            API::setText(i, j, std::to_string(floodMap[i][j]));
+        }
+    }
 }
