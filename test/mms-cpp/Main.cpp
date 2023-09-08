@@ -294,6 +294,64 @@ void updateWalls(int **wallMap, int x, int y, Orient orient, int direction) {
     default:
         break;
     }
+    // // update the appropriate walls based on the orientation and direction
+    // switch (orient)
+    // {
+    // case NORTH:
+    //     if (direction == LEFT) {
+    //         setWall(wallMap, x, y, WALL_LEFT);
+    //         setWall(wallMap, x - 1, y, WALL_RIGHT);
+    //     } else if (direction == RIGHT) {
+    //         setWall(wallMap, x, y, WALL_RIGHT);
+    //         setWall(wallMap, x + 1, y, WALL_LEFT);
+    //     } else if (direction == FORWARD) {
+    //         setWall(wallMap, x, y, WALL_FRONT);
+    //         setWall(wallMap, x, y + 1, WALL_BACK);
+    //     }
+    //     break;
+
+    // case EAST:
+    //     if (direction == LEFT) {
+    //         setWall(wallMap, x, y, WALL_FRONT);
+    //         setWall(wallMap, x, y + 1, WALL_BACK);
+    //     } else if (direction == RIGHT) {
+    //         setWall(wallMap, x, y, WALL_BACK);
+    //         setWall(wallMap, x, y - 1, WALL_FRONT);
+    //     } else if (direction == FORWARD) {
+    //         setWall(wallMap, x, y, WALL_RIGHT);
+    //         setWall(wallMap, x + 1, y, WALL_LEFT);
+    //     }
+    //     break;
+
+    // case SOUTH:
+    //     if (direction == LEFT) {
+    //         setWall(wallMap, x, y, WALL_RIGHT);
+    //         setWall(wallMap, x + 1, y, WALL_LEFT);
+    //     } else if (direction == RIGHT) {
+    //         setWall(wallMap, x, y, WALL_LEFT);
+    //         setWall(wallMap, x - 1, y, WALL_RIGHT);
+    //     } else if (direction == FORWARD) {
+    //         setWall(wallMap, x, y, WALL_BACK);
+    //         setWall(wallMap, x, y - 1, WALL_FRONT);
+    //     }
+    //     break;
+
+    // case WEST:
+    //     if (direction == LEFT) {
+    //         setWall(wallMap, x, y, WALL_BACK);
+    //         setWall(wallMap, x, y - 1, WALL_FRONT);
+    //     } else if (direction == RIGHT) {
+    //         setWall(wallMap, x, y, WALL_FRONT);
+    //         setWall(wallMap, x, y + 1, WALL_BACK);
+    //     } else if (direction == FORWARD) {
+    //         setWall(wallMap, x, y, WALL_LEFT);
+    //         setWall(wallMap, x - 1, y, WALL_RIGHT);
+    //     }
+    //     break;
+    
+    // default:
+    //     break;
+    // }
 
 }
 
