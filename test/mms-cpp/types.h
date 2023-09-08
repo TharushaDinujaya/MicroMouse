@@ -8,16 +8,22 @@
 #define WALL_RIGHT 4
 #define WALL_BACK 8
 
+#define OFFSET 100
+
 enum Orient {
-    NORTH,
-    EAST,
-    SOUTH,
-    WEST
+    NORTH = OFFSET + 0,
+    EAST = OFFSET + 1,
+    SOUTH = OFFSET + 2,
+    WEST = OFFSET + 3
 };
 
-#define LEFT 111
-#define RIGHT 222
-#define FORWARD 333
+#define LEFT -1
+#define RIGHT 1
+#define FORWARD 0
 
+struct Point {
+    int x;
+    int y;
+};
 
 #endif
