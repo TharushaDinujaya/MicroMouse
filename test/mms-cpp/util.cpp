@@ -1,5 +1,4 @@
 #include"types.h"
-#include "util.h"
 
 // helper function implementations
 bool isLeftWall(int **wallMap, Point current) {

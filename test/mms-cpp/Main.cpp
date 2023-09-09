@@ -4,6 +4,8 @@
 #include "API.h"
 #include"queue.h"
 #include "util.h"
+#include "tracker.h"
+
 
 #define UNDEFINED 99999
 // finsihing point coordinate of the maze
@@ -17,7 +19,7 @@ void reset_flood_map(int **floodMap);
 
 // updating function declarations
 void update_flood_map(int **floodMap, int** wallMap, queue *q);
-Point getNextFloodIndex(int **floodMap, int x, int y, Orient orient, int direction);
+Point getNextFloodIndex(int x, int y, Orient orient, int direction);
 void updateWalls(int **wallMap, int x, int y, Orient orient, int direction);
 void setWall(int **wallMap, int x, int y, int wall);
 bool isFinished(int x, int y);
@@ -36,7 +38,7 @@ int main(int argc, char* argv[]) {
     queue *q = create_queue();
 
     log("Running...");
-    API::setColor(0, 0, 'G');
+    API::setColor(0, 0, 'A');
     API::setText(0, 0, "abc");
 
     // starting position of the maze
@@ -52,7 +54,7 @@ int main(int argc, char* argv[]) {
         // observe the existence of the walls
         // check LEFT
         if (!API::wallLeft()) {
-            Point p = getNextFloodIndex(floodMap, x, y, orient, LEFT);
+            Point p = getNextFloodIndex(x, y, orient, LEFT);
             leftIndex = floodMap[p.x][p.y];
         } else {
             // update the wall map
@@ -60,7 +62,7 @@ int main(int argc, char* argv[]) {
         }
         // check RIGHT
         if (!API::wallRight()) {
-            Point p = getNextFloodIndex(floodMap, x, y, orient, RIGHT);
+            Point p = getNextFloodIndex(x, y, orient, RIGHT);
             rightIndex = floodMap[p.x][p.y];
         } else {
             updateWalls(wallMap, x, y, orient, RIGHT);
@@ -68,7 +70,7 @@ int main(int argc, char* argv[]) {
         }
         // check FRONT
         if (!API::wallFront()) {
-            Point p = getNextFloodIndex(floodMap, x, y, orient, FORWARD);
+            Point p = getNextFloodIndex(x, y, orient, FORWARD);
             frontIndex = floodMap[p.x][p.y];
         } else {
             updateWalls(wallMap, x, y, orient, FORWARD);
@@ -77,16 +79,18 @@ int main(int argc, char* argv[]) {
 
         // find the minimum flood index
         int min = leftIndex;
-        if (min > rightIndex) {
-            min = rightIndex;
-            min_index = RIGHT;
-        }
         if (min > frontIndex) {
             min = frontIndex;
             min_index = FORWARD;
         }
+        if (min > rightIndex) {
+            min = rightIndex;
+            min_index = RIGHT;
+        }
+
 
         if (min == UNDEFINED) {
+            log("UNDEFINED TURNING RIGHT");
             API::turnRight();
             orient = getAbsDirection(orient, RIGHT);
             // reset the flood map
@@ -97,20 +101,24 @@ int main(int argc, char* argv[]) {
         Point p;
         // move to the cell with the minimum flood index
         if (min_index == LEFT) {
+            log("LEFT");
             API::turnLeft();
             API::moveForward();
-            p = getNextFloodIndex(floodMap, x, y, orient, LEFT);  
+            p = getNextFloodIndex(x, y, orient, LEFT);  
             orient = getAbsDirection(orient, LEFT); // update the current position
         } else if (min_index == RIGHT) {
+            log("RIGHT");
             API::turnRight();
             API::moveForward();
-            p = getNextFloodIndex(floodMap, x, y, orient, RIGHT);
+            p = getNextFloodIndex(x, y, orient, RIGHT);
             orient = getAbsDirection(orient, RIGHT);; // update the current position
         } else if (min_index == FORWARD) {
+            log("FRONT");
             API::moveForward();
-            p = getNextFloodIndex(floodMap, x, y, orient, FORWARD); // update the current position
+            p = getNextFloodIndex(x, y, orient, FORWARD); // update the current position
         }
         x = p.x; y = p.y; // update the current position
+        // updateTrack(floodMap, wallMap, x, y); // update the path
         // reset the flood map
         reset_flood_map(floodMap);
 
@@ -223,7 +231,7 @@ void update_flood_map(int **floodMap, int** wallMap, queue *q) {
     }
 }
 
-Point getNextFloodIndex(int **floodMap, int x, int y, Orient orient, int direction) {
+Point getNextFloodIndex(int x, int y, Orient orient, int direction) {
     // get the absolute direction using the current orientation and the direction
     Orient absOrientation = getAbsDirection(orient, direction);
     
