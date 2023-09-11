@@ -118,7 +118,7 @@ int main(int argc, char* argv[]) {
             p = getNextFloodIndex(x, y, orient, FORWARD); // update the current position
         }
         x = p.x; y = p.y; // update the current position
-        // updateTrack(floodMap, wallMap, x, y); // update the path
+        updateTrack(floodMap, wallMap, x, y); // update the path
         // reset the flood map
         reset_flood_map(floodMap);
 

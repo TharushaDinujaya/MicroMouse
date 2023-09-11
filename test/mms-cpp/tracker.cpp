@@ -48,10 +48,10 @@ void updateTrack(int** floodMap, int** wallMap, int x, int y) {
 Point getMinimumNeighbour(int **floodMap, int** wallMap, int x, int y) {
     Point p = {x, y};
     int value_N = INT32_MAX, value_E = INT32_MAX, value_W = INT32_MAX, value_S = INT32_MAX;
-    if (isValid({x, y + 1}) && !isFrontWall(wallMap, p)) value_N = floodMap[x][y + 1];
-    if (isValid({x + 1, y}) && !isRightWall(wallMap, p)) value_E = floodMap[x + 1][y];
-    if (isValid({x - 1, y}) && !isLeftWall(wallMap, p)) value_W = floodMap[x - 1][y];
-    if (isValid({x, y - 1}) && !isBackWall(wallMap, p)) value_S = floodMap[x][y - 1];
+    if (isValid({x, y + 1})) value_N = floodMap[x][y + 1];
+    if (isValid({x + 1, y})) value_E = floodMap[x + 1][y];
+    if (isValid({x - 1, y})) value_W = floodMap[x - 1][y];
+    if (isValid({x, y - 1})) value_S = floodMap[x][y - 1];
 
     int min = value_W;
     Point minPoint = {x - 1, y};
