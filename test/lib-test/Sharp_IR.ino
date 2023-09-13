@@ -63,14 +63,26 @@ void loop() {
 
   // Print distance in cm, as a float value
 
-  Serial.print(sensor1.getDistanceFloat());
 
-  Serial.print(sensor2.getDistanceFloat());
-
-  Serial.print(sensor3.getDistanceFloat());
-  
-  if(sensor1.getDistanceFloat()<15 && sensor2.getDistanceFloat()<11 && sensor2.getDistanceFloat()<15){
-
+  if (sensor1.getDistanceFloat() < 15 || sensor2.getDistanceFloat() < 11 || sensor2.getDistanceFloat() < 15) {
+    stop();
+    delay(500);
+    left(150);
+    delay(1000);
+    if (sensor1.getDistanceFloat() < 15 || sensor2.getDistanceFloat() < 11 || sensor2.getDistanceFloat() < 15) {
+      right(150);
+      delay(1000);
+      if (sensor1.getDistanceFloat() < 15 || sensor2.getDistanceFloat() < 11 || sensor2.getDistanceFloat() < 15) {
+        reverse(150);
+        delay(1000);
+      } else {
+        forward(150);
+      }
+    } else {
+      forward(150);
+    }
+  } else {
+    forward(150);
   }
 
 
@@ -112,4 +124,11 @@ void right(int speed) {
   digitalWrite(in2B, LOW);
   ledcWrite(pwmChannel1, speed);  // 1.65 V
   ledcWrite(pwmChannel2, speed);  // 1.65 V
+}
+
+void stop() {
+  digitalWrite(in1A, LOW);
+  digitalWrite(in2A, LOW);
+  digitalWrite(in1B, LOW);
+  digitalWrite(in2B, LOW);
 }
