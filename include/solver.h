@@ -13,7 +13,7 @@ Point getNext(int floodMap[][MAZE_SIZE], int wallMap[][MAZE_SIZE], Point current
 void go(Orient orient, Point point); // move the mouse to the given position with given orientation
 void setWalls(int wallMap[][MAZE_SIZE], Point current, Orient orient, int direction);
 bool isFinished(int floodMap[][MAZE_SIZE], Point current); // check if the mouse has reached the destination
-void optimizedFloodMapFill(int floodMap[][MAZE_SIZE], int wallMap[][MAZE_SIZE]);
+void optimizedFloodMapFill(int floodMap[][MAZE_SIZE], int wallMap[][MAZE_SIZE], Point current, Orient orient, int direction); // update the flood index of cells based on wall configutrations
 
 Orient getAbsDirection(Orient orient, int direction);
 

@@ -217,7 +217,7 @@ bool isFinished(int floodMap[][MAZE_SIZE], Point current) {
     return floodMap[current.x][current.y] == 0;
 }
 
-void optimizedFloodMapFill(int floodMap[][MAZE_SIZE], int wallMap[][MAZE_SIZE]) {
+void optimizedFloodMapFill(int floodMap[][MAZE_SIZE], int wallMap[][MAZE_SIZE], Point current, Orient orient, int direction) {
 
     static Stack *s = createStack();
 
