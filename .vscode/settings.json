@@ -2,6 +2,14 @@
   "files.associations": {
     "*.ejs": "html",
     "string": "cpp",
-    "ostream": "cpp"
+    "ostream": "cpp",
+    "array": "c",
+    "deque": "c",
+    "list": "c",
+    "unordered_map": "c",
+    "vector": "c",
+    "string_view": "c",
+    "initializer_list": "c",
+    "ranges": "c"
   }
 }
