@@ -1,6 +1,7 @@
 #include"maze.h"
 #include"solver.h"
 #include"queue.h"
+#include "stack.h"
 
 // helper function implementations
 bool isLeftWall(int wallMap[][MAZE_SIZE], Point current) {
@@ -17,6 +18,30 @@ bool isFrontWall(int wallMap[][MAZE_SIZE], Point current) {
 
 bool isBackWall(int wallMap[][MAZE_SIZE], Point current) {
     return wallMap[current.x][current.y] & WALL_BACK;
+}
+
+Point getNextPoint(int x, int y, Orient orient, int direction) {
+
+    // get the absolute direction using the current orientation and the direction
+    Orient absOrientation = getAbsDirection(orient, direction);
+    
+    // based on abs direction return the next cell
+    switch (absOrientation)
+    {
+    case NORTH:
+        return {x, y + 1};
+    case EAST:
+        return {x + 1, y};
+    case SOUTH:
+        return {x, y - 1};
+    case WEST:
+        return {x - 1, y};
+    default:
+        break;
+    }
+
+    return {-1, -1};
+
 }
 
 Orient getAbsDirection(Orient orient, int direction) {
@@ -66,8 +91,10 @@ void resetFloodMap(int floodMap[][MAZE_SIZE]) {
     floodMap[FINISHING_X + 1][FINISHING_Y + 1] = 0;
 }
 
-void updateFullFloodArray(int floodMap[][MAZE_SIZE], int wallMap[][MAZE_SIZE], Queue *q) {
-// reset the given queue
+void updateFullFloodArray(int floodMap[][MAZE_SIZE], int wallMap[][MAZE_SIZE]) {
+
+    static Queue *q = createQueue(); // create a queue to store the cells to be updated
+    // reset the given queue
     resetQueue(q);
 
     // add the middle 4 cells to the queue
@@ -108,4 +135,94 @@ void updateFullFloodArray(int floodMap[][MAZE_SIZE], int wallMap[][MAZE_SIZE], Q
 
 
     }
+}
+
+Point getNext(int floodMap[][MAZE_SIZE], int wallMap[][MAZE_SIZE], Point current, Orient orient) {
+
+    int min_flood_index = UNDEFINED;
+    Point next;
+    // based on the flood map detemrine miniumum flood index of the surrounding cells that can be reached
+    // get the left, right and front cells
+    Point left = getNextPoint(current.x, current.y, orient, LEFT);
+    Point right = getNextPoint(current.x, current.y, orient, RIGHT);
+    Point front = getNextPoint(current.x, current.y, orient, FORWARD);
+
+    // check whether the left cell is not a wall and the flood index is defined
+    if (!isLeftWall(wallMap, current) && floodMap[left.x][left.y] != UNDEFINED) {
+        // if the flood index is less than the current min flood index, update the min flood index and the next cell
+        if (floodMap[left.x][left.y] < min_flood_index) {
+            min_flood_index = floodMap[left.x][left.y];
+            next = left;
+        }
+    }
+
+    if (!isRightWall(wallMap, current) && floodMap[right.x][right.y] != UNDEFINED) {
+        if (floodMap[right.x][right.y] < min_flood_index) {
+            min_flood_index = floodMap[right.x][right.y];
+            next = right;
+        }
+    }
+
+    if (!isFrontWall(wallMap, current) && floodMap[front.x][front.y] != UNDEFINED) {
+        if (floodMap[front.x][front.y] < min_flood_index) {
+            min_flood_index = floodMap[front.x][front.y];
+            next = front;
+        }
+    }
+
+    if (min_flood_index == UNDEFINED) {
+        // if the min flood index is undefined, then the mouse is in a dead end
+        // so return the current position
+        return current;
+    }
+    return next;
+}
+
+void setWalls(int wallMap[][MAZE_SIZE], Point current, Orient orient, int direction) {
+
+    // get the next cell according to the directions
+    Point next = getNextPoint(current.x, current.y, orient, direction);
+    Orient absOrient = getAbsDirection(orient, direction);
+
+    switch (absOrient)
+    {
+    case NORTH:
+        wallMap[current.x][current.y] |= WALL_FRONT;
+        wallMap[next.x][next.y] |= WALL_BACK;
+        break;
+
+    case EAST:
+        wallMap[current.x][current.y] |= WALL_RIGHT;
+        wallMap[next.x][next.y] |= WALL_LEFT;
+        break;
+    
+    case SOUTH:
+        wallMap[current.x][current.y] |= WALL_BACK;
+        wallMap[next.x][next.y] |= WALL_FRONT;
+        break;
+
+    case WEST:
+        wallMap[current.x][current.y] |= WALL_LEFT;
+        wallMap[next.x][next.y] |= WALL_RIGHT;
+        break;
+    
+    default:
+        break;
+    }
+
+}
+
+bool isFinished(int floodMap[][MAZE_SIZE], Point current) {
+    // check if the current position is the destination
+    return floodMap[current.x][current.y] == 0;
+}
+
+void optimizedFloodMapFill(int floodMap[][MAZE_SIZE], int wallMap[][MAZE_SIZE]) {
+
+    static Stack *s = createStack();
+
+    // reset the stack first
+    resetStack(s);
+    // algorithm goes here
+
 }

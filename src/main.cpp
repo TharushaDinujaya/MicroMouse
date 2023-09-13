@@ -1,6 +1,6 @@
 #include <Arduino.h>
-#include<maze.h>
-#include<solver.h>
+#include "maze.h"
+#include "solver.h"
 
 // create two arrays fo rrepresent wall map and flood index map with predefine sizes
 int wallMap[MAZE_SIZE][MAZE_SIZE];
@@ -15,5 +15,5 @@ void setup() {
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+  
 }
