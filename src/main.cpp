@@ -92,15 +92,68 @@ void loop() {
 
 }
 
+void forward(int speed) {
+  digitalWrite(in1A, HIGH);
+  digitalWrite(in2A, LOW);
+  digitalWrite(in1B, HIGH);
+  digitalWrite(in2B, LOW);
+  ledcWrite(pwmChannel1, speed);  // 1.65 V
+  ledcWrite(pwmChannel2, speed);  // 1.65 V
+}
+
+void reverse(int speed) {
+  digitalWrite(in1A, LOW);
+  digitalWrite(in2A, HIGH);
+  digitalWrite(in1B, LOW);
+  digitalWrite(in2B, HIGH);
+  ledcWrite(pwmChannel1, speed);  // 1.65 V
+  ledcWrite(pwmChannel2, speed);  // 1.65 V
+}
+
+void left(int speed) {
+  digitalWrite(in1A, HIGH);
+  digitalWrite(in2A, LOW);
+  digitalWrite(in1B, LOW);
+  digitalWrite(in2B, HIGH);
+  ledcWrite(pwmChannel1, speed);  // 1.65 V
+  ledcWrite(pwmChannel2, speed);  // 1.65 V
+}
+
+void right(int speed) {
+  digitalWrite(in1A, LOW);
+  digitalWrite(in2A, HIGH);
+  digitalWrite(in1B, HIGH);
+  digitalWrite(in2B, LOW);
+  ledcWrite(pwmChannel1, speed);  // 1.65 V
+  ledcWrite(pwmChannel2, speed);  // 1.65 V
+}
+
+void stop() {
+  digitalWrite(in1A, LOW);
+  digitalWrite(in2A, LOW);
+  digitalWrite(in1B, LOW);
+  digitalWrite(in2B, LOW);
+}
+
+
+
+void rotateLeft(void) {
+  // TODO: implement the rotate left mechanism through motor drive and gyroscope
+}
+
+void rotateRight(void) {
+  // TODO: implement the rotate right mechanism through motor drive and gyroscope
+}
+
 void rotateMouse(int8_t direction) {
-  // TODO: rotate the mouse according to given target direction
+  // rotate the mouse according to given target direction
   switch (direction)
   {
   case LEFT:
-    /* code */
+    left(150); // TODO: adjust the speed of the motor
     break;
   case RIGHT:
-    /* code */
+    right(150); // TODO: adjust the speed of the motor
     break;
   case FORWARD:
     // nothing to do here
@@ -116,7 +169,7 @@ void moveMouseForward(void) {
   float frontDistance = sensor2.getDistance();
   float initialDistance = frontDistance;
   // TODO: start the motor drive to move forward
-
+  forward(150); // TODO: adjust the speed of the motor
   while (frontDistance > initialDistance - CELL_SIZE) {
     // TODO: keep align with the walls
     // TODO: get the distance from the front TOF sensor
@@ -124,6 +177,7 @@ void moveMouseForward(void) {
   }
 
   // TODO: stop the motor drive
+  stop();
 
 }
 
@@ -132,9 +186,9 @@ bool run(void) {
   resetFloodMap(floodMap);
   
   // TODO:  first identifying the walls around the mouse
-  bool leftWall = sensor1.getDistance() < 10; // TODO: should change the implementation
-  bool rightWall = sensor3.getDistance() < 10; // TODO: should change the implementation
-  bool frontWall = sensor2.getDistance() < 10;  // TODO: should change the implementation
+  bool leftWall = sensor1.getDistanceFloat() < 10; // TODO: should change the implementation
+  bool rightWall = sensor3.getDistanceFloat() < 10; // TODO: should change the implementation
+  bool frontWall = sensor2.getDistanceFloat() < 10;  // TODO: should change the implementation
 
   // update the wall map according to sensor inputs
   if (leftWall) setWalls(wallMap, {X, Y}, orient, LEFT);
