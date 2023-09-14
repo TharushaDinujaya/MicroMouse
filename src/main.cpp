@@ -43,6 +43,8 @@ Orient orient = NORTH; // initial orientation of the mouse
 uint8_t X = 0;
 uint8_t Y = 0;
 
+bool run(void);
+
 void setup() {
   // board initializing routines goes here
   sensor1.setFilterRate(0.1f);
@@ -63,8 +65,6 @@ void setup() {
   // Assigns the PWM channel to pin 23
   ledcAttachPin(pwmA, pwmChannel1);
   ledcAttachPin(pwmB, pwmChannel2);
-
-
 
   // array initialize routines goes here
   initializeMaze(wallMap, floodMap);

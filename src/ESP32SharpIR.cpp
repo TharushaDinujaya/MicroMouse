@@ -8,7 +8,7 @@ ESP32SharpIR::ESP32SharpIR( sensorCode _sensorType , uint8_t _sensorPin ) {
   pin = _sensorPin;
 
   // Set ADC unit resolution on ESP32
-  // analogReadResolution(ANALOG_RESOLUTION);
+  analogReadResolution(ANALOG_RESOLUTION);
 
 }
 
