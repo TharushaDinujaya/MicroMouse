@@ -2,12 +2,13 @@
 #ifndef MAZE_H
 #define MAZE_H
 
-#include<ctype.h>
+#include <stdint.h>
 
 #define MAZE_SIZE 14
 #define MAZE_CELLS (MAZE_SIZE * MAZE_SIZE)
-#define UNDEFINED 99999
+#define UNDEFINED 9999
 #define ORIENT_OFFSET 100
+#define CELL_SIZE 14.0f
 
 enum Orient {
     NORTH = ORIENT_OFFSET + 0,

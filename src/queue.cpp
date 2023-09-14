@@ -1,8 +1,6 @@
 #include"maze.h"
 #include"queue.h"
 
-using namespace std;
-
 bool empty(Queue* queue){
     return (queue->front == queue->back);
 }
@@ -33,13 +31,12 @@ void resetQueue(Queue* queue){
 
 
 Point dequeue(Queue *q) {
-    if (q->front == q->back) return {-1, -1}; // queue is empty
+    if (q->front == q->back) return {0, 0}; // queue is empty
 
     q->front = (q->front + 1) % q->size;
     return q->queue[q->front];
     
 }
-
 
 
 void enqueue(Queue *q, Point value) {

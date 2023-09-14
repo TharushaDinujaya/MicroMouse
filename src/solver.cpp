@@ -40,8 +40,7 @@ Point getNextPoint(int x, int y, Orient orient, int direction) {
         break;
     }
 
-    return {-1, -1};
-
+    return {x, y};
 }
 
 Orient getAbsDirection(Orient orient, int direction) {

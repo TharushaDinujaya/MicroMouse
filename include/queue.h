@@ -1,7 +1,7 @@
-#include"maze.h"
-
 #ifndef QUEUE_H
 #define QUEUE_H
+
+#include"maze.h"
 
 struct Queue {
     Point* queue;
