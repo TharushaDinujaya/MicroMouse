@@ -4,6 +4,8 @@
 
 #include <Arduino.h>
 
+#define TEST 1
+#define SEARCH_RUN 0
 #define RETURN_TO_START 0
 #define FAST_RUN 0
 
@@ -70,13 +72,37 @@ void setup() {
   initializeMaze(wallMap, floodMap);
 }
 
+void test() {
+  while (true) {
+    float d1 = sensor1.getDistanceFloat();
+    float d2 = sensor2.getDistanceFloat();
+    float d3 = sensor3.getDistanceFloat();
+
+    Serial.print("d1: ");
+    Serial.print(d1);
+    Serial.print(" d2: ");
+    Serial.print(d2);
+    Serial.print(" d3: ");
+    Serial.println(d3);
+
+    delay(100);
+  }
+}
+
 void loop() {
     digitalWrite(LED_BUILTIN, HIGH);
+    
+    #if TEST
+    test();
+    #endif
+
+    #if SEARCH_RUN
     // run the mouse until it reaches the destination
     bool running = true;
     while (running) {
       running = run();
     }
+    #endif
 
     #if RETURN_TO_START
     // TODO: find the way back to the destination
@@ -166,7 +192,7 @@ void rotateMouse(int8_t direction) {
 void moveMouseForward(void) {
   // TODO: apply the logic to move the mouse until it reaches the middle of the next cell
   // TODO: get the distance from the front TOF sensor at the beginning
-  float frontDistance = sensor2.getDistance();
+  float frontDistance = sensor2.getDistanceFloat();
   float initialDistance = frontDistance;
   // TODO: start the motor drive to move forward
   forward(150); // TODO: adjust the speed of the motor
