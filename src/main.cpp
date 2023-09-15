@@ -1,4 +1,5 @@
 #include "ESP32SharpIR.h"
+#include "Adafruit_VL53L0X.h"
 #include "maze.h"
 #include "solver.h"
 
@@ -25,9 +26,6 @@
 #define in1B 19
 #define in2B 18
 
-// Speed control potentiometers
-
-
 // Motor Speed Values - Start at zero
 int MotorSpeed1 = 0;
 int MotorSpeed2 = 0;
@@ -35,6 +33,33 @@ int MotorSpeed2 = 0;
 ESP32SharpIR sensor1(ESP32SharpIR::GP2Y0A21YK0F, 26);
 ESP32SharpIR sensor2(ESP32SharpIR::GP2Y0A21YK0F, 35);
 ESP32SharpIR sensor3(ESP32SharpIR::GP2Y0A21YK0F, 34);
+
+// TOF initialization parameters and variable creations
+// address we will assign if dual sensor is present
+#define LOX1_ADDRESS 0x30
+#define LOX2_ADDRESS 0x31
+#define LOX3_ADDRESS 0x32
+#define LOX4_ADDRESS 0x34
+int sensor1, sensor2, sensor3, sensor4;
+
+
+// set the pins to shutdown
+#define SHT_LOX1 2 // FRONT
+#define SHT_LOX2 4 // RIGHT
+#define SHT_LOX3 5 // BACK
+#define SHT_LOX4 19 // LEFT
+
+// objects for the vl53l0x
+Adafruit_VL53L0X lox1 = Adafruit_VL53L0X();
+Adafruit_VL53L0X lox2 = Adafruit_VL53L0X();
+Adafruit_VL53L0X lox3 = Adafruit_VL53L0X();
+Adafruit_VL53L0X lox4 = Adafruit_VL53L0X();
+
+// this holds the measurement
+VL53L0X_RangingMeasurementData_t measure1;
+VL53L0X_RangingMeasurementData_t measure2;
+VL53L0X_RangingMeasurementData_t measure3;
+VL53L0X_RangingMeasurementData_t measure4;
 
 
 // create two arrays to represent wall map and flood index map with predefine sizes
@@ -54,8 +79,82 @@ void stop();
 void forward(int speed);
 void reverse(int speed);
 
+/*
+    Reset all sensors by setting all of their XSHUT pins low for delay(10), then set all XSHUT high to bring out of reset
+    Keep sensor #1 awake by keeping XSHUT pin high
+    Put all other sensors into shutdown by pulling XSHUT pins low
+    Initialize sensor #1 with lox.begin(new_i2c_address) Pick any number but 0x29 and it must be under 0x7F. Going with 0x30 to 0x3F is probably OK.
+    Keep sensor #1 awake, and now bring sensor #2 out of reset by setting its XSHUT pin high.
+    Initialize sensor #2 with lox.begin(new_i2c_address) Pick any number but 0x29 and whatever you set the first sensor to
+ */
+void setID() {
+  // all reset
+  digitalWrite(SHT_LOX1, LOW);
+  digitalWrite(SHT_LOX2, LOW);
+  digitalWrite(SHT_LOX3, LOW);
+  digitalWrite(SHT_LOX4, LOW);
+  delay(10);
+  // all unreset
+  digitalWrite(SHT_LOX1, HIGH);
+  digitalWrite(SHT_LOX2, HIGH);
+  digitalWrite(SHT_LOX3, HIGH);
+  digitalWrite(SHT_LOX4, HIGH);
+  delay(10);
+
+  // activating LOX1 and reseting LOX2
+  digitalWrite(SHT_LOX1, HIGH);
+  digitalWrite(SHT_LOX2, LOW);
+  digitalWrite(SHT_LOX3, LOW);
+  digitalWrite(SHT_LOX4, LOW);
+
+  // initing LOX1
+  if (!lox1.begin(LOX1_ADDRESS)) {
+    Serial.println(F("Failed to boot first VL53L0X"));
+    while (1)
+      ;
+  }
+  delay(10);
+
+  // activating LOX2
+  digitalWrite(SHT_LOX2, HIGH);
+  delay(10);
+
+  //initing LOX2
+  if (!lox2.begin(LOX2_ADDRESS)) {
+    Serial.println(F("Failed to boot second VL53L0X"));
+    while (1)
+      ;
+  }
+  // activating LOX3
+  digitalWrite(SHT_LOX3, HIGH);
+  delay(10);
+
+  //initing LOX2
+  if (!lox3.begin(LOX3_ADDRESS)) {
+    Serial.println(F("Failed to boot second VL53L0X"));
+    while (1)
+      ;
+  }
+
+  // activating LOX4
+  digitalWrite(SHT_LOX4, HIGH);
+  delay(10);
+
+  //initing LOX2
+  if (!lox4.begin(LOX4_ADDRESS)) {
+    Serial.println(F("Failed to boot second VL53L0X"));
+    while (1)
+      ;
+  }
+}
 
 void setup() {
+  Serial.begin(115200);
+
+  // wait until serial port opens for native USB devices
+  while (! Serial) {
+    delay(1);
+  }
   // board initializing routines goes here
   sensor1.setFilterRate(0.0f);
   sensor2.setFilterRate(0.0f);
@@ -76,6 +175,23 @@ void setup() {
   ledcAttachPin(pwmA, pwmChannel1);
   ledcAttachPin(pwmB, pwmChannel2);
 
+  pinMode(SHT_LOX1, OUTPUT);
+  pinMode(SHT_LOX2, OUTPUT);
+  pinMode(SHT_LOX3, OUTPUT);
+  pinMode(SHT_LOX4, OUTPUT);
+
+  Serial.println("Shutdown pins inited...");
+
+  digitalWrite(SHT_LOX1, LOW);
+  digitalWrite(SHT_LOX2, LOW);
+  digitalWrite(SHT_LOX3, LOW);
+  digitalWrite(SHT_LOX4, LOW);
+
+  Serial.println("Both in reset mode...(pins are low)");
+
+
+  Serial.println("Starting...");
+
   // array initialize routines goes here
   initializeMaze(wallMap, floodMap);
   Serial.begin(115200);
@@ -83,20 +199,20 @@ void setup() {
 
 void test() {
   while (true) {
-    float front = sensor2.getDistanceFloat();
-    if (front > 5) {
-      Serial.printf("Distance (front): %f \n", front);
+    int front = measure1.RangeMilliMeter;
+    if (front > 80) {
+      Serial.printf("Distance (front): %d \n", front);
       forward(150);
     } else {
-      float leftD = sensor1.getDistanceFloat();
-      float rightD = sensor3.getDistanceFloat();
+      int leftD = measure4.RangeMilliMeter;
+      int rightD = measure2.RangeMilliMeter;
 
-     if (leftD > 10) {
+     if (leftD > 100) {
         Serial.printf("Distance (left): %f \n", leftD);
         left(150);
         delay(ROTATE_TIME);
         stop();
-      } else if (rightD < 10) {
+      } else if (rightD < 100) {
         Serial.printf("Distance (right): %f \n", rightD);
         right(150);
         delay(ROTATE_TIME);
@@ -189,11 +305,11 @@ void stop() {
 
 
 void rotateLeft(void) {
-  // TODO: implement the rotate left mechanism through motor drive and gyroscope
+  // implement the rotate left mechanism through motor drive and gyroscope
 }
 
 void rotateRight(void) {
-  // TODO: implement the rotate right mechanism through motor drive and gyroscope
+  // implement the rotate right mechanism through motor drive and gyroscope
 }
 
 void rotateMouse(int direction) {
@@ -220,24 +336,21 @@ void rotateMouse(int direction) {
 
 void moveMouseForward(void) {
   // TODO: apply the logic to move the mouse until it reaches the middle of the next cell
-  // TODO: get the distance from the front TOF sensor at the beginning
-  float frontDistance = sensor2.getDistanceFloat();
-  float initialDistance = frontDistance;
+  // get the distance from the front TOF sensor at the beginning
+  int frontDistance = measure1.RangeMilliMeter;
+  int initialDistance = frontDistance;
 
   // TODO: start the motor drive to move forward
+  forward(150); // TODO: adjust the speed of the motor
   while (frontDistance > initialDistance - CELL_SIZE) {
-    forward(150); // TODO: adjust the speed of the motor
     // TODO: keep align with the walls
-    // TODO: get the distance from the front TOF sensor
-    delay(100);
-    frontDistance = sensor2.getDistanceFloat();
-    // stop();
+    delay(50);
+    frontDistance = measure1.RangeMilliMeter; // distance from the front TOF sensor
   }
   // forward(125);
   // delay(1200);
 
-  // TODO: stop the motor drive
-  stop();
+  stop(); //  stop the motor drive
 
 }
 
@@ -246,9 +359,9 @@ bool run(void) {
   resetFloodMap(floodMap);
   
   // TODO:  first identifying the walls around the mouse
-  bool leftWall = sensor1.getDistanceFloat() < MIN_DISTANCE; // TODO: should change the implementation
-  bool rightWall = sensor3.getDistanceFloat() < MIN_DISTANCE; // TODO: should change the implementation
-  bool frontWall = sensor2.getDistanceFloat() < MIN_DISTANCE;  // TODO: should change the implementation
+  bool leftWall = measure4.RangeMilliMeter < SIDE_MIN_DISTANCE; // TODO: should change the implementation
+  bool rightWall = measure2.RangeMilliMeter < SIDE_MIN_DISTANCE; // TODO: should change the implementation
+  bool frontWall = measure1.RangeMilliMeter<  FRONT_MIN_DISTANCE;  // TODO: should change the implementation
 
   // update the wall map according to sensor inputs
   if (leftWall) setWalls(wallMap, {X, Y}, orient, LEFT);
@@ -262,12 +375,12 @@ bool run(void) {
   Point next = getNext(floodMap, wallMap, {X, Y}, orient);
 
   // TODO: move the mouse to the next cell
-      // TODO: if point is different from current point rotate the mouse until find the correct orientation
+      // if point is different from current point rotate the mouse until find the correct orientation
       
-      // TODO: else 
-        // TODO: rotate the mouse according to given target orientation
+      // else 
+        // rotate the mouse according to given target orientation
         
-        // TODO: move the mouse forward until it reaches the next cell
+        // move the mouse forward until it reaches the next cell
   if (next.x == X && next.y == Y) {
     // rotatet the mouse until it find the appropriate oreintation
     rotateMouse(RIGHT); // TODO: change the priority of the rotation to LEFT/RIGHT if changes needed 
