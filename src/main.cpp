@@ -78,59 +78,39 @@ void setup() {
 
   // array initialize routines goes here
   initializeMaze(wallMap, floodMap);
+  Serial.begin(115200);
 }
 
 void test() {
-//   while (true) {
-//       if (sensor1.getDistanceFloat() < 15 || sensor2.getDistanceFloat() < 11 || sensor2.getDistanceFloat() < 15) {
-//     stop();
-//     delay(500);
-//     left(150);
-//     delay(1000);
-//     if (sensor1.getDistanceFloat() < 15 || sensor2.getDistanceFloat() < 11 || sensor2.getDistanceFloat() < 15) {
-//       right(150);
-//       delay(1000);
-//       if (sensor1.getDistanceFloat() < 15 || sensor2.getDistanceFloat() < 11 || sensor2.getDistanceFloat() < 15) {
-//         reverse(150);
-//         delay(1000);
-//       } else {
-//         forward(150);
-//       }
-//     } else {
-//       forward(150);
-//     }
-//   } else {
-//     forward(150);
-//   }
-
-
-
-//   delay(100);
-// }
-
-
-    float d1 = sensor1.getDistanceFloat();
-    float d2 = sensor2.getDistanceFloat();
-    float d3 = sensor3.getDistanceFloat();
-
-    if (d2 < 30.0f) {
-      reverse(150);
-    } else {
+  while (true) {
+    float front = sensor2.getDistanceFloat();
+    if (front > 5) {
+      Serial.printf("Distance (front): %f \n", front);
       forward(150);
-    }
-    delay(100);
-    stop();
+    } else {
+      float leftD = sensor1.getDistanceFloat();
+      float rightD = sensor3.getDistanceFloat();
 
-    // delay(100);
-    // while (true) {
-    //   right(150);
-    //   delay(1000);
-    //   stop();
-    // }
-  // }
+     if (leftD > 10) {
+        Serial.printf("Distance (left): %f \n", leftD);
+        left(150);
+        delay(ROTATE_TIME);
+        stop();
+      } else if (rightD < 10) {
+        Serial.printf("Distance (right): %f \n", rightD);
+        right(150);
+        delay(ROTATE_TIME);
+        stop();
+      } else {
+        Serial.printf("Stopped !");
+        stop();
+      }
+    }
+  }
 }
 
 void loop() {
+    Serial.print("loop started");
     digitalWrite(LED_BUILTIN, HIGH);
     delay(1000);
     digitalWrite(LED_BUILTIN, LOW);
@@ -221,12 +201,12 @@ void rotateMouse(int direction) {
   switch (direction)
   {
   case LEFT:
-    right(150); // TODO: adjust the speed of the motor
+    left(150); // TODO: adjust the speed of the motor
     delay(ROTATE_TIME);
     stop();
     break;
   case RIGHT:
-    left(150); // TODO: adjust the speed of the motor
+    right(150); // TODO: adjust the speed of the motor
     delay(ROTATE_TIME);
     stop();
     break;
@@ -243,17 +223,18 @@ void moveMouseForward(void) {
   // TODO: get the distance from the front TOF sensor at the beginning
   float frontDistance = sensor2.getDistanceFloat();
   float initialDistance = frontDistance;
+
   // TODO: start the motor drive to move forward
-  // while (frontDistance > initialDistance - CELL_SIZE) {
-  //   forward(150); // TODO: adjust the speed of the motor
-  //   // TODO: keep align with the walls
-  //   // TODO: get the distance from the front TOF sensor
-  //   delay(100);
-  //   frontDistance = sensor2.getDistanceFloat();
-  //   stop();
-  // }
-  forward(125);
-  delay(1500);
+  while (frontDistance > initialDistance - CELL_SIZE) {
+    forward(150); // TODO: adjust the speed of the motor
+    // TODO: keep align with the walls
+    // TODO: get the distance from the front TOF sensor
+    delay(100);
+    frontDistance = sensor2.getDistanceFloat();
+    // stop();
+  }
+  // forward(125);
+  // delay(1200);
 
   // TODO: stop the motor drive
   stop();
@@ -303,6 +284,7 @@ bool run(void) {
   // move the mouse forward until it reaches the next cell
   // TODO: move the mouse forward until it reaches the next cell
   moveMouseForward();
+  // delay(1000);
   // update the current position of the mouse and orientation
   X = next.x;
   Y = next.y;

@@ -8,8 +8,8 @@
 #define MAZE_CELLS (MAZE_SIZE * MAZE_SIZE)
 #define UNDEFINED 9999
 #define ORIENT_OFFSET 100
-#define CELL_SIZE 16.0f
-#define MIN_DISTANCE 15.0f
+#define CELL_SIZE 14.8f
+#define MIN_DISTANCE 18.0f
 #define ROTATE_TIME 350
 
 enum Orient {
