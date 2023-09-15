@@ -2,10 +2,11 @@
 #include "maze.h"
 #include "solver.h"
 
+
 #include <Arduino.h>
 
-#define TEST 1
-#define SEARCH_RUN 0
+#define TEST 0
+#define SEARCH_RUN 1
 #define RETURN_TO_START 0
 #define FAST_RUN 0
 
@@ -46,6 +47,13 @@ int X = 0;
 int Y = 0;
 
 bool run(void);
+void left(int speed);
+void right(int speed);
+void stop();
+
+void forward(int speed);
+void reverse(int speed);
+
 
 void setup() {
   // board initializing routines goes here
@@ -73,24 +81,59 @@ void setup() {
 }
 
 void test() {
-  while (true) {
+//   while (true) {
+//       if (sensor1.getDistanceFloat() < 15 || sensor2.getDistanceFloat() < 11 || sensor2.getDistanceFloat() < 15) {
+//     stop();
+//     delay(500);
+//     left(150);
+//     delay(1000);
+//     if (sensor1.getDistanceFloat() < 15 || sensor2.getDistanceFloat() < 11 || sensor2.getDistanceFloat() < 15) {
+//       right(150);
+//       delay(1000);
+//       if (sensor1.getDistanceFloat() < 15 || sensor2.getDistanceFloat() < 11 || sensor2.getDistanceFloat() < 15) {
+//         reverse(150);
+//         delay(1000);
+//       } else {
+//         forward(150);
+//       }
+//     } else {
+//       forward(150);
+//     }
+//   } else {
+//     forward(150);
+//   }
+
+
+
+//   delay(100);
+// }
+
+
     float d1 = sensor1.getDistanceFloat();
     float d2 = sensor2.getDistanceFloat();
     float d3 = sensor3.getDistanceFloat();
 
-    Serial.print("d1: ");
-    Serial.print(d1);
-    Serial.print(" d2: ");
-    Serial.print(d2);
-    Serial.print(" d3: ");
-    Serial.println(d3);
-
+    if (d2 < 30.0f) {
+      reverse(150);
+    } else {
+      forward(150);
+    }
     delay(100);
-  }
+    stop();
+
+    // delay(100);
+    // while (true) {
+    //   right(150);
+    //   delay(1000);
+    //   stop();
+    // }
+  // }
 }
 
 void loop() {
     digitalWrite(LED_BUILTIN, HIGH);
+    delay(1000);
+    digitalWrite(LED_BUILTIN, LOW);
     
     #if TEST
     test();
@@ -98,8 +141,10 @@ void loop() {
 
     #if SEARCH_RUN
     // run the mouse until it reaches the destination
+    Serial.println("Running the mouse...");
     bool running = true;
     while (running) {
+      Serial.println("Running the mouse step...");
       running = run();
     }
     #endif
@@ -171,15 +216,19 @@ void rotateRight(void) {
   // TODO: implement the rotate right mechanism through motor drive and gyroscope
 }
 
-void rotateMouse(int8_t direction) {
+void rotateMouse(int direction) {
   // rotate the mouse according to given target direction
   switch (direction)
   {
   case LEFT:
-    left(150); // TODO: adjust the speed of the motor
+    right(150); // TODO: adjust the speed of the motor
+    delay(ROTATE_TIME);
+    stop();
     break;
   case RIGHT:
-    right(150); // TODO: adjust the speed of the motor
+    left(150); // TODO: adjust the speed of the motor
+    delay(ROTATE_TIME);
+    stop();
     break;
   case FORWARD:
     // nothing to do here
@@ -195,12 +244,16 @@ void moveMouseForward(void) {
   float frontDistance = sensor2.getDistanceFloat();
   float initialDistance = frontDistance;
   // TODO: start the motor drive to move forward
-  forward(150); // TODO: adjust the speed of the motor
-  while (frontDistance > initialDistance - CELL_SIZE) {
-    // TODO: keep align with the walls
-    // TODO: get the distance from the front TOF sensor
-    delay(100);
-  }
+  // while (frontDistance > initialDistance - CELL_SIZE) {
+  //   forward(150); // TODO: adjust the speed of the motor
+  //   // TODO: keep align with the walls
+  //   // TODO: get the distance from the front TOF sensor
+  //   delay(100);
+  //   frontDistance = sensor2.getDistanceFloat();
+  //   stop();
+  // }
+  forward(125);
+  delay(1500);
 
   // TODO: stop the motor drive
   stop();
@@ -212,9 +265,9 @@ bool run(void) {
   resetFloodMap(floodMap);
   
   // TODO:  first identifying the walls around the mouse
-  bool leftWall = sensor1.getDistanceFloat() < 10; // TODO: should change the implementation
-  bool rightWall = sensor3.getDistanceFloat() < 10; // TODO: should change the implementation
-  bool frontWall = sensor2.getDistanceFloat() < 10;  // TODO: should change the implementation
+  bool leftWall = sensor1.getDistanceFloat() < MIN_DISTANCE; // TODO: should change the implementation
+  bool rightWall = sensor3.getDistanceFloat() < MIN_DISTANCE; // TODO: should change the implementation
+  bool frontWall = sensor2.getDistanceFloat() < MIN_DISTANCE;  // TODO: should change the implementation
 
   // update the wall map according to sensor inputs
   if (leftWall) setWalls(wallMap, {X, Y}, orient, LEFT);
