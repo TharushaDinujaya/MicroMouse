@@ -1,8 +1,9 @@
 #include "Adafruit_VL53L0X.h"
 
-#define ROTATE_TIME 415
+#define ROTATE_TIME 440
+#define REVERSE_ROTATE_TIME 560
 #define LOWER_THERSHOLD 50
-#define HIGHER_THRESHOLD 60
+#define HIGHER_THRESHOLD 55
 #define CELL_SIZE 144
 
 #define pwmChannel1 0
@@ -173,6 +174,28 @@ void read_dual_sensors() {
         stop();
       } else {
         stop();
+        right(120);
+        delay(REVERSE_ROTATE_TIME);
+        right(120);
+        delay(REVERSE_ROTATE_TIME);
+        stop();
+
+        // adjust the mouse if it is out of range
+        if (!inRange(leftD) || !inRange(rightD)) {
+          digitalWrite(in1A, HIGH);
+          digitalWrite(in2A, LOW);
+          digitalWrite(in1B, HIGH);
+          digitalWrite(in2B, LOW);
+          if (leftD < LOWER_THERSHOLD) {
+              ledcWrite(pwmChannel1, 120);  // 1.65 V
+              ledcWrite(pwmChannel2, 120 - 30);  // 1.65 V
+          } else {
+              ledcWrite(pwmChannel1, 120 - 30);  // 1.65 V
+              ledcWrite(pwmChannel2, 120);  // 1.65 V
+          }
+        }
+        delay(150);
+        stop();
       }
     }
 }
@@ -232,6 +255,10 @@ bool inRange(int distance) {
   return distance > LOWER_THERSHOLD && distance < HIGHER_THRESHOLD;
 }
 
+int get_speed(int distance) {
+  return (int) (0.67 * distance + 63);
+}
+
 void forward(int speed, int left, int right) {
   
   digitalWrite(in1A, HIGH);
@@ -239,32 +266,35 @@ void forward(int speed, int left, int right) {
   digitalWrite(in1B, HIGH);
   digitalWrite(in2B, LOW);
   
-  if (inRange(left) && inRange(right)) {
+
+  if ((inRange(left) && inRange(right)) || (left > CELL_SIZE && right > CELL_SIZE)) {
     ledcWrite(pwmChannel1, speed);  // 1.65 V
     ledcWrite(pwmChannel2, speed);  // 1.65 V
   } else if (left > CELL_SIZE) {
+    // int delta_s = get_speed(right);
     if (right < LOWER_THERSHOLD) {
-      ledcWrite(pwmChannel1, speed - 60);  // 1.65 V
-      ledcWrite(pwmChannel2, speed + 20);  // 1.65 V
+      ledcWrite(pwmChannel1, speed - 30);  // 1.65 V
+      ledcWrite(pwmChannel2, speed);  // 1.65 V
     } else {
-      ledcWrite(pwmChannel1, speed + 20);  // 1.65 V
-      ledcWrite(pwmChannel2, speed - 60);  // 1.65 V
+      ledcWrite(pwmChannel1, speed);  // 1.65 V
+      ledcWrite(pwmChannel2, speed - 30);  // 1.65 V
     }
   } else if (right > CELL_SIZE) {
+    int delta_s = get_speed(left);
     if (left < LOWER_THERSHOLD) {
-      ledcWrite(pwmChannel1, speed + 20);  // 1.65 V
-      ledcWrite(pwmChannel2, speed - 60);  // 1.65 V
+      ledcWrite(pwmChannel1, speed);  // 1.65 V
+      ledcWrite(pwmChannel2, speed - 30);  // 1.65 V
     } else {
-      ledcWrite(pwmChannel1, speed - 60);  // 1.65 V
-      ledcWrite(pwmChannel2, speed + 20);  // 1.65 V
+      ledcWrite(pwmChannel1, speed - 30);  // 1.65 V
+      ledcWrite(pwmChannel2, speed);  // 1.65 V
     }
   } else {
     if (left < LOWER_THERSHOLD) {
-      ledcWrite(pwmChannel1, speed + 20);  // 1.65 V
-      ledcWrite(pwmChannel2, speed - 60);  // 1.65 V
+      ledcWrite(pwmChannel1, speed);  // 1.65 V
+      ledcWrite(pwmChannel2, speed - 30);  // 1.65 V
     } else if (right < LOWER_THERSHOLD) {
-      ledcWrite(pwmChannel1, speed - 60);  // 1.65 V
-      ledcWrite(pwmChannel2, speed + 20);  // 1.65 V
+      ledcWrite(pwmChannel1, speed - 30);  // 1.65 V
+      ledcWrite(pwmChannel2, speed);  // 1.65 V
     } else {
       ledcWrite(pwmChannel1, speed);  // 1.65 V
       ledcWrite(pwmChannel2, speed);  // 1.65 V
