@@ -2,6 +2,7 @@
 #include"solver.h"
 #include"queue.h"
 #include "stack.h"
+#include"user.h"
 
 // helper function implementations
 bool isLeftWall(int wallMap[][MAZE_SIZE], Point current) {

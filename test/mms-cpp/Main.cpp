@@ -41,8 +41,8 @@ int main(int argc, char* argv[]) {
     // create an array of ints to represent the flood map
     int** floodMap = initializeFloodMap();
     int** wallMap = initializeWallMap();
-    char* pathString = new char[400];
-    int pathLength = 0;
+    // char* pathString = new char[400];
+    // int pathLength = 0;
     // initialize a queue with default size
     queue *q = create_queue();
 
@@ -50,96 +50,96 @@ int main(int argc, char* argv[]) {
     API::setColor(0, 0, 'A');
     API::setText(0, 0, "abc");
 
-    // starting position of the maze
-    int x = 0, y = 0;
-    Orient orient = NORTH; // starting orienttation of the mouse
-    while (true) {
-        update_flood_map(floodMap, wallMap, q);
-        #if PRINT
-        printFloodMap(floodMap);
-        #endif
+    // // starting position of the maze
+    // int x = 0, y = 0;
+    // Orient orient = NORTH; // starting orienttation of the mouse
+    // while (true) {
+    //     update_flood_map(floodMap, wallMap, q);
+    //     #if PRINT
+    //     printFloodMap(floodMap);
+    //     #endif
 
-        int leftIndex = UNDEFINED, rightIndex = UNDEFINED, frontIndex = UNDEFINED;
-        Point next = {-1, -1};
-        int min_index = LEFT;
-        // observe the existence of the walls
-        // check LEFT
-        if (!API::wallLeft()) {
-            Point p = getNextFloodIndex(x, y, orient, LEFT);
-            leftIndex = floodMap[p.x][p.y];
-        } else {
-            // update the wall map
-            updateWalls(wallMap, x, y, orient, LEFT);
-        }
-        // check RIGHT
-        if (!API::wallRight()) {
-            Point p = getNextFloodIndex(x, y, orient, RIGHT);
-            rightIndex = floodMap[p.x][p.y];
-        } else {
-            updateWalls(wallMap, x, y, orient, RIGHT);
+    //     int leftIndex = UNDEFINED, rightIndex = UNDEFINED, frontIndex = UNDEFINED;
+    //     Point next = {-1, -1};
+    //     int min_index = LEFT;
+    //     // observe the existence of the walls
+    //     // check LEFT
+    //     if (!API::wallLeft()) {
+    //         Point p = getNextFloodIndex(x, y, orient, LEFT);
+    //         leftIndex = floodMap[p.x][p.y];
+    //     } else {
+    //         // update the wall map
+    //         updateWalls(wallMap, x, y, orient, LEFT);
+    //     }
+    //     // check RIGHT
+    //     if (!API::wallRight()) {
+    //         Point p = getNextFloodIndex(x, y, orient, RIGHT);
+    //         rightIndex = floodMap[p.x][p.y];
+    //     } else {
+    //         updateWalls(wallMap, x, y, orient, RIGHT);
 
-        }
-        // check FRONT
-        if (!API::wallFront()) {
-            Point p = getNextFloodIndex(x, y, orient, FORWARD);
-            frontIndex = floodMap[p.x][p.y];
-        } else {
-            updateWalls(wallMap, x, y, orient, FORWARD);
+    //     }
+    //     // check FRONT
+    //     if (!API::wallFront()) {
+    //         Point p = getNextFloodIndex(x, y, orient, FORWARD);
+    //         frontIndex = floodMap[p.x][p.y];
+    //     } else {
+    //         updateWalls(wallMap, x, y, orient, FORWARD);
 
-        }
+    //     }
 
-        // find the minimum flood index
-        int min = leftIndex;
-        if (min > frontIndex) {
-            min = frontIndex;
-            min_index = FORWARD;
-        }
-        if (min > rightIndex) {
-            min = rightIndex;
-            min_index = RIGHT;
-        }
+    //     // find the minimum flood index
+    //     int min = leftIndex;
+    //     if (min > frontIndex) {
+    //         min = frontIndex;
+    //         min_index = FORWARD;
+    //     }
+    //     if (min > rightIndex) {
+    //         min = rightIndex;
+    //         min_index = RIGHT;
+    //     }
 
 
-        if (min == UNDEFINED) {
-            API::turnRight();
-            pathString[pathLength++] = 'r';
-            orient = getAbsDirection(orient, RIGHT);
-            // reset the flood map
-            reset_flood_map(floodMap);
-            continue;
-        }
+    //     if (min == UNDEFINED) {
+    //         API::turnRight();
+    //         pathString[pathLength++] = 'r';
+    //         orient = getAbsDirection(orient, RIGHT);
+    //         // reset the flood map
+    //         reset_flood_map(floodMap);
+    //         continue;
+    //     }
 
-        Point p;
-        // move to the cell with the minimum flood index
-        if (min_index == LEFT) {
-            API::turnLeft();
-            API::moveForward();
-            pathString[pathLength++] = 'l';
-            pathString[pathLength++] = 'f';
-            p = getNextFloodIndex(x, y, orient, LEFT);  
-            orient = getAbsDirection(orient, LEFT); // update the current position
-        } else if (min_index == RIGHT) {
-            API::turnRight();
-            API::moveForward();
-            pathString[pathLength++] = 'r';
-            pathString[pathLength++] = 'f';
-            p = getNextFloodIndex(x, y, orient, RIGHT);
-            orient = getAbsDirection(orient, RIGHT);; // update the current position
-        } else if (min_index == FORWARD) {
-            API::moveForward();
-            pathString[pathLength++] = 'f';
-            p = getNextFloodIndex(x, y, orient, FORWARD); // update the current position
-        }
-        x = p.x; y = p.y; // update the current position
-        updateTrack(floodMap, wallMap, x, y); // update the path
-        // reset the flood map
-        reset_flood_map(floodMap);
+    //     Point p;
+    //     // move to the cell with the minimum flood index
+    //     if (min_index == LEFT) {
+    //         API::turnLeft();
+    //         API::moveForward();
+    //         pathString[pathLength++] = 'l';
+    //         pathString[pathLength++] = 'f';
+    //         p = getNextFloodIndex(x, y, orient, LEFT);  
+    //         orient = getAbsDirection(orient, LEFT); // update the current position
+    //     } else if (min_index == RIGHT) {
+    //         API::turnRight();
+    //         API::moveForward();
+    //         pathString[pathLength++] = 'r';
+    //         pathString[pathLength++] = 'f';
+    //         p = getNextFloodIndex(x, y, orient, RIGHT);
+    //         orient = getAbsDirection(orient, RIGHT);; // update the current position
+    //     } else if (min_index == FORWARD) {
+    //         API::moveForward();
+    //         pathString[pathLength++] = 'f';
+    //         p = getNextFloodIndex(x, y, orient, FORWARD); // update the current position
+    //     }
+    //     x = p.x; y = p.y; // update the current position
+    //     updateTrack(floodMap, wallMap, x, y); // update the path
+    //     // reset the flood map
+    //     reset_flood_map(floodMap);
 
-        if (isFinished(x, y)) break;
-    }
+    //     if (isFinished(x, y)) break;
+    // }
 
-    // return to starting point
-    return_to_start(pathString, pathLength);
+    // // return to starting point
+    // return_to_start(pathString, pathLength);
 
     // fast run
     for (int i = 0; i < 8; i++) {

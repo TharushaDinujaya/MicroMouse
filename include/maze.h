@@ -2,16 +2,11 @@
 #ifndef MAZE_H
 #define MAZE_H
 
-#include <stdint.h>
-
 #define MAZE_SIZE 5
 #define MAZE_CELLS (MAZE_SIZE * MAZE_SIZE)
 #define UNDEFINED 9999
 #define ORIENT_OFFSET 100
 #define CELL_SIZE 148
-#define SIDE_MIN_DISTANCE 50
-#define FRONT_MIN_DISTANCE 70
-#define ROTATE_TIME 350
 
 enum Orient {
     NORTH = ORIENT_OFFSET + 0,
@@ -32,11 +27,7 @@ enum Orient {
 #define WALL_RIGHT 4
 #define WALL_BACK 8
 
-// TODO: detsination coordinations // change the detsination coordinations and build the target
-// *************************************************** //
-#define FINISHING_X 3
-#define FINISHING_Y 3
-// *************************************************** //
+
 
 // struct for represent the Point in the maze (Cell position)
 struct Point {
