@@ -1,9 +1,9 @@
 #ifndef USER_H
 #define USER_H
 
-#define TEST 0
-#define SEARCH_RUN 1
-#define RETURN_TO_START 1
+#define TEST 1
+#define SEARCH_RUN 0
+#define RETURN_TO_START 0
 #define FAST_RUN 0
 #define DEBUG 1
 
