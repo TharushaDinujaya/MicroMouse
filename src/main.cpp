@@ -19,9 +19,9 @@
 #define LOX4_ADDRESS 0x34
 
 // set the pins to shutdown
-#define SHT_LOX1 2 // FRONT
+#define SHT_LOX1 18 // FRONT
 #define SHT_LOX2 4 // RIGHT
-#define SHT_LOX3 18 // BACK
+#define SHT_LOX3 2 // BACK
 #define SHT_LOX4 19 // LEFT
 
 // create two arrays to represent wall map and flood index map with predefine sizes

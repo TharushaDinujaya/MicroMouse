@@ -7,14 +7,14 @@
 // #define frequency 30000  // PWM frequency of 1 KHz
 
 // Motor A
-#define pwmA 13
-#define in1A 14
-#define in2A 12
+#define pwmA 26
+#define in1A 33
+#define in2A 25
 
 // Motor B
-#define pwmB 4
-#define in1B 19
-#define in2B 18
+#define pwmB 32
+#define in1B 27
+#define in2B 14
 
 void initializeMotors();
 
