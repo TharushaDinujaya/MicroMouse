@@ -19,9 +19,9 @@
 #define LOX4_ADDRESS 0x34
 
 // set the pins to shutdown
-#define SHT_LOX1 2 // FRONT
+#define SHT_LOX1 18 // FRONT
 #define SHT_LOX2 4 // RIGHT
-#define SHT_LOX3 18 // BACK
+#define SHT_LOX3 2 // BACK
 #define SHT_LOX4 19 // LEFT
 
 // create two arrays to represent wall map and flood index map with predefine sizes
@@ -35,11 +35,38 @@ int pathLength = 0; // length of the path
 int X = 0;
 int Y = 0;
 
+// objects for the vl53l0x
+Adafruit_VL53L0X lox1 = Adafruit_VL53L0X();
+Adafruit_VL53L0X lox2 = Adafruit_VL53L0X();
+Adafruit_VL53L0X lox3 = Adafruit_VL53L0X();
+Adafruit_VL53L0X lox4 = Adafruit_VL53L0X();
+
+// this holds the measurement
+VL53L0X_RangingMeasurementData_t measure1;
+VL53L0X_RangingMeasurementData_t measure2;
+VL53L0X_RangingMeasurementData_t measure3;
+VL53L0X_RangingMeasurementData_t measure4;
+
 void test() {
   while (true) {
-    int front = measure1.RangeMilliMeter;
-    int leftD = measure4.RangeMilliMeter;
-    int rightD = measure2.RangeMilliMeter;
+    int front = 0, leftD = 0, rightD = 0;
+    if (measure1.RangeStatus != 4) {
+      front = measure1.RangeMilliMeter;
+    } else {
+      Serial.print("Front out of range");
+    }
+
+    if (measure2.RangeStatus != 4) {
+      rightD = measure2.RangeMilliMeter;
+    } else {
+      Serial.print("Right out of range");
+    }
+
+    if (measure4.RangeStatus != 4) {
+      leftD = measure4.RangeMilliMeter;
+    } else {
+      Serial.print("Left out of range");
+    }
     Serial.printf("front: %d, left: %d, right: %d \n", front, leftD, rightD);
 
     if (front > 80) {
@@ -72,17 +99,6 @@ void log(const char* message) {
   #endif
 }
 
-// objects for the vl53l0x
-Adafruit_VL53L0X lox1 = Adafruit_VL53L0X();
-Adafruit_VL53L0X lox2 = Adafruit_VL53L0X();
-Adafruit_VL53L0X lox3 = Adafruit_VL53L0X();
-Adafruit_VL53L0X lox4 = Adafruit_VL53L0X();
-
-// this holds the measurement
-VL53L0X_RangingMeasurementData_t measure1;
-VL53L0X_RangingMeasurementData_t measure2;
-VL53L0X_RangingMeasurementData_t measure3;
-VL53L0X_RangingMeasurementData_t measure4;
 
 void initializeTOF() {
     
