@@ -9,9 +9,9 @@ int sensor1, sensor2, sensor3, sensor4;
 
 
 // set the pins to shutdown
-#define SHT_LOX1 2
+#define SHT_LOX1 18
 #define SHT_LOX2 4
-#define SHT_LOX3 5
+#define SHT_LOX3 2
 #define SHT_LOX4 19
 
 // objects for the vl53l0x
@@ -78,7 +78,7 @@ void setID() {
 
   //initing LOX2
   if (!lox3.begin(LOX3_ADDRESS)) {
-    Serial.println(F("Failed to boot second VL53L0X"));
+    Serial.println(F("Failed to boot third VL53L0X"));
     while (1)
       ;
   }
@@ -89,7 +89,7 @@ void setID() {
 
   //initing LOX2
   if (!lox4.begin(LOX4_ADDRESS)) {
-    Serial.println(F("Failed to boot second VL53L0X"));
+    Serial.println(F("Failed to boot fourth VL53L0X"));
     while (1)
       ;
   }
