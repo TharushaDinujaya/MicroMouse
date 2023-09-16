@@ -17,5 +17,6 @@ void optimizedFloodMapFill(int floodMap[][MAZE_SIZE], int wallMap[][MAZE_SIZE], 
 int findDirection(Point current, Point next, Orient orient); // find the direction which we need to rotate based on current, next point and current orienttation
 
 Orient getAbsDirection(Orient orient, int direction);
+bool isReversed(Orient orient1, Orient orient2);
 
 #endif

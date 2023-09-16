@@ -21,27 +21,37 @@ bool isBackWall(int wallMap[][MAZE_SIZE], Point current) {
     return wallMap[current.x][current.y] & WALL_BACK;
 }
 
+bool isReversed(Orient orient1, Orient orient2) {
+    int diff = orient1 - orient2;
+    return diff == -2 || diff == 2;
+}
+
 Point getNextPoint(int x, int y, Orient orient, int direction) {
 
     // get the absolute direction using the current orientation and the direction
     Orient absOrientation = getAbsDirection(orient, direction);
     
+    Point p = {x, y};
     // based on abs direction return the next cell
     switch (absOrientation)
     {
     case NORTH:
-        return {x, y + 1};
+        p = {x, y + 1};
+        break;
     case EAST:
-        return {x + 1, y};
+        p = {x + 1, y};
+        break;
     case SOUTH:
-        return {x, y - 1};
+        p = {x, y - 1};
+        break;
     case WEST:
-        return {x - 1, y};
+        p = {x - 1, y};
+        break;
     default:
         break;
     }
 
-    return {x, y};
+    return p;
 }
 
 Orient getAbsDirection(Orient orient, int direction) {
@@ -139,42 +149,44 @@ void updateFullFloodArray(int floodMap[][MAZE_SIZE], int wallMap[][MAZE_SIZE]) {
 
 Point getNext(int floodMap[][MAZE_SIZE], int wallMap[][MAZE_SIZE], Point current, Orient orient) {
 
-    int min_flood_index = UNDEFINED;
     Point next;
-    // based on the flood map detemrine miniumum flood index of the surrounding cells that can be reached
-    // get the left, right and front cells
-    Point left = getNextPoint(current.x, current.y, orient, LEFT);
-    Point right = getNextPoint(current.x, current.y, orient, RIGHT);
-    Point front = getNextPoint(current.x, current.y, orient, FORWARD);
 
-    // check whether the left cell is not a wall and the flood index is defined
-    if (!isLeftWall(wallMap, current) && floodMap[left.x][left.y] != UNDEFINED) {
-        // if the flood index is less than the current min flood index, update the min flood index and the next cell
-        if (floodMap[left.x][left.y] < min_flood_index) {
-            min_flood_index = floodMap[left.x][left.y];
-            next = left;
-        }
+    int northIndex = floodMap[current.x][current.y + 1];
+    int eastIndex = floodMap[current.x + 1][current.y];
+    int southIndex = floodMap[current.x][current.y - 1];
+    int westIndex = floodMap[current.x - 1][current.y];
+
+    int minIndex = UNDEFINED;
+    if (minIndex > northIndex && !isFrontWall(wallMap, current) && !isReversed(orient, NORTH)) {
+        minIndex = northIndex;
     }
 
-    if (!isFrontWall(wallMap, current) && floodMap[front.x][front.y] != UNDEFINED) {
-        if (floodMap[front.x][front.y] < min_flood_index) {
-            min_flood_index = floodMap[front.x][front.y];
-            next = front;
-        }
+    if (minIndex > eastIndex && !isRightWall(wallMap, current) && !isReversed(orient, EAST)) {
+        minIndex = eastIndex;
     }
 
-    if (!isRightWall(wallMap, current) && floodMap[right.x][right.y] != UNDEFINED) {
-        if (floodMap[right.x][right.y] < min_flood_index) {
-            min_flood_index = floodMap[right.x][right.y];
-            next = right;
-        }
+    if (minIndex > southIndex && !isBackWall(wallMap, current) && !isReversed(orient, SOUTH)) {
+        minIndex = southIndex;
     }
 
-
-    if (min_flood_index == UNDEFINED) {
-        // if the min flood index is undefined, then the mouse is in a dead end
-        // so return the current position
+    if (minIndex > westIndex && !isLeftWall(wallMap, current) && !isReversed(orient, WEST)) {
+        minIndex = westIndex;
+    }
+    
+    if (minIndex == UNDEFINED) {
+        // if no cell is found return the current cell
         return current;
+    }
+
+    // get the next cell according to the min flood index
+    if (minIndex == northIndex) {
+        next = {current.x, current.y + 1};
+    } else if (minIndex == eastIndex) {
+        next = {current.x + 1, current.y};
+    } else if (minIndex == southIndex) {
+        next = {current.x, current.y - 1};
+    } else if (minIndex == westIndex) {
+        next = {current.x - 1, current.y};
     }
     return next;
 }

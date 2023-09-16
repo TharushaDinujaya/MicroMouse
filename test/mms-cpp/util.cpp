@@ -26,7 +26,7 @@ Orient getAbsDirection(Orient orient, int direction) {
 
 bool isReverseDirection(Orient dir1, Orient dir2) {
     int diff = dir1 - dir2;
-    return diff == 2 || diff == 2;
+    return diff == -2 || diff == 2;
 }
 
 int getDirection(Orient current_dir, Orient other_dir) {
