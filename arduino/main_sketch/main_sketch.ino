@@ -1,7 +1,9 @@
 #include "Adafruit_VL53L0X.h"
 
 #define ROTATE_TIME 415
-#define THRESHOLD 50
+#define LOWER_THERSHOLD 50
+#define HIGHER_THRESHOLD 60
+#define CELL_SIZE 144
 
 #define pwmChannel1 0
 #define pwmChannel2 1    // Selects channel 0
@@ -226,24 +228,47 @@ void initializeMotors() {
   ledcAttachPin(pwmB, pwmChannel2);
 }
 
+bool inRange(int distance) {
+  return distance > LOWER_THERSHOLD && distance < HIGHER_THRESHOLD;
+}
+
 void forward(int speed, int left, int right) {
   
   digitalWrite(in1A, HIGH);
   digitalWrite(in2A, LOW);
   digitalWrite(in1B, HIGH);
   digitalWrite(in2B, LOW);
-  if (left > THRESHOLD && right > THRESHOLD) {
+  
+  if (inRange(left) && inRange(right)) {
     ledcWrite(pwmChannel1, speed);  // 1.65 V
     ledcWrite(pwmChannel2, speed);  // 1.65 V
-  } else if (left < THRESHOLD && right > THRESHOLD) {
-    ledcWrite(pwmChannel1, speed + 20);  // 1.65 V
-    ledcWrite(pwmChannel2, speed - 60);  // 1.65 V
-  } else if (right < THRESHOLD && left > THRESHOLD) {
-    ledcWrite(pwmChannel1, speed - 60);  // 1.65 V
-    ledcWrite(pwmChannel2, speed + 20);  // 1.65 V
+  } else if (left > CELL_SIZE) {
+    if (right < LOWER_THERSHOLD) {
+      ledcWrite(pwmChannel1, speed - 60);  // 1.65 V
+      ledcWrite(pwmChannel2, speed + 20);  // 1.65 V
+    } else {
+      ledcWrite(pwmChannel1, speed + 20);  // 1.65 V
+      ledcWrite(pwmChannel2, speed - 60);  // 1.65 V
+    }
+  } else if (right > CELL_SIZE) {
+    if (left < LOWER_THERSHOLD) {
+      ledcWrite(pwmChannel1, speed + 20);  // 1.65 V
+      ledcWrite(pwmChannel2, speed - 60);  // 1.65 V
+    } else {
+      ledcWrite(pwmChannel1, speed - 60);  // 1.65 V
+      ledcWrite(pwmChannel2, speed + 20);  // 1.65 V
+    }
   } else {
-    ledcWrite(pwmChannel1, speed);  // 1.65 V
-    ledcWrite(pwmChannel2, speed);  // 1.65 V
+    if (left < LOWER_THERSHOLD) {
+      ledcWrite(pwmChannel1, speed + 20);  // 1.65 V
+      ledcWrite(pwmChannel2, speed - 60);  // 1.65 V
+    } else if (right < LOWER_THERSHOLD) {
+      ledcWrite(pwmChannel1, speed - 60);  // 1.65 V
+      ledcWrite(pwmChannel2, speed + 20);  // 1.65 V
+    } else {
+      ledcWrite(pwmChannel1, speed);  // 1.65 V
+      ledcWrite(pwmChannel2, speed);  // 1.65 V
+    }
   }
 }
 
