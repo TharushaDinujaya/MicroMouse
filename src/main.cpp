@@ -49,6 +49,11 @@ VL53L0X_RangingMeasurementData_t measure4;
 
 void test() {
   while (true) {
+    lox1.rangingTest(&measure1, false);  // pass in 'true' to get debug data printout!
+    lox2.rangingTest(&measure2, false);
+    lox3.rangingTest(&measure3, false);
+    lox4.rangingTest(&measure4, false);  // pass in 'true' to get debug data printout!
+    
     int front = 0, leftD = 0, rightD = 0;
     if (measure1.RangeStatus != 4) {
       front = measure1.RangeMilliMeter;
@@ -80,7 +85,7 @@ void test() {
         left(150);
         delay(ROTATE_TIME);
         stop();
-      } else if (rightD < 100) {
+      } else if (rightD > 100) {
         Serial.printf("Distance (right): %f \n", rightD);
         right(150);
         delay(ROTATE_TIME);
@@ -196,10 +201,6 @@ void setup() {
 }
 
 void loop() {
-    lox1.rangingTest(&measure1, false);  // pass in 'true' to get debug data printout!
-    lox2.rangingTest(&measure2, false);
-    lox3.rangingTest(&measure3, false);
-    lox4.rangingTest(&measure4, false);  // pass in 'true' to get debug data printout!
 
     log("Starting the program...");
     // blink the LED to indicate the start of the program
