@@ -23,3 +23,16 @@ Orient getAbsDirection(Orient orient, int direction) {
 
     return (Orient) (tmp + OFFSET);
 }
+
+bool isReverseDirection(Orient dir1, Orient dir2) {
+    int diff = dir1 - dir2;
+    return diff == 2 || diff == 2;
+}
+
+int getDirection(Orient current_dir, Orient other_dir) {
+    // return the direction we need to rotate according to current orientation
+    int tmp = other_dir - current_dir;
+    if (tmp == 3) return LEFT;
+    if (tmp == -3) return RIGHT;
+    else return tmp;
+}
