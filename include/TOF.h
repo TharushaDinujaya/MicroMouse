@@ -13,7 +13,7 @@
 // set the pins to shutdown
 #define SHT_LOX1 2 // FRONT
 #define SHT_LOX2 4 // RIGHT
-#define SHT_LOX3 5 // BACK
+#define SHT_LOX3 18 // BACK
 #define SHT_LOX4 19 // LEFT
 
 void initializeTOF();
