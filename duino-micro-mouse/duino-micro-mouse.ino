@@ -1,32 +1,33 @@
 #include "Adafruit_VL53L0X.h"
-#include "user.h"
-#include "motor.h"
-// #include "TOF.h"
-#include "solver.h"
 
-// TOF initialization parameters and variable creations
+#define pwmChannel1 0
+#define pwmChannel2 1   // Selects channel 0
+#define resolution 8    // 8-bit resolution, 256 possible values
+#define frequency 30000 // PWM frequency of 1 KHz
+
+// Motor A
+#define pwmA 26
+#define in1A 33
+#define in2A 25
+
+// Motor B
+#define pwmB 32
+#define in1B 27
+#define in2B 14
+
 // address we will assign if dual sensor is present
 #define LOX1_ADDRESS 0x30
 #define LOX2_ADDRESS 0x31
 #define LOX3_ADDRESS 0x32
 #define LOX4_ADDRESS 0x34
-#define LOX5_ADDRESS 0x35
+#define LOX5_ADDRESS 0x38
 
 // set the pins to shutdown
-#define SHT_LOX1 18 // FRONT
-#define SHT_LOX2 4  // RIGHT
-#define SHT_LOX3 2  // RIGHT SECONDARY
-#define SHT_LOX4 19 // LEFT SECONDARY
-#define SHT_LOX5 5  // LEFT
-
-struct DistanceMetrix
-{
-  int leftFront;
-  int leftBack;
-  int rightFront;
-  int rightBack;
-  int front;
-};
+#define SHT_LOX1 18
+#define SHT_LOX2 4
+#define SHT_LOX3 2
+#define SHT_LOX4 19
+#define SHT_LOX5 5
 
 // objects for the vl53l0x
 Adafruit_VL53L0X lox1 = Adafruit_VL53L0X();
@@ -36,32 +37,35 @@ Adafruit_VL53L0X lox4 = Adafruit_VL53L0X();
 Adafruit_VL53L0X lox5 = Adafruit_VL53L0X();
 
 // this holds the measurement
-VL53L0X_RangingMeasurementData_t measure1; // LEFT ORIGINAL TOF (FRONT)
-VL53L0X_RangingMeasurementData_t measure2; // LEFT EXTRA TOF (BACK)
-VL53L0X_RangingMeasurementData_t measure3; // RIGHT ORIGINAL TOF (FRONT)
-VL53L0X_RangingMeasurementData_t measure4; // FRONT TOF
-VL53L0X_RangingMeasurementData_t measure5; // RIGHT EXTRA TOF (BACK)
+VL53L0X_RangingMeasurementData_t measure1; // original left
+VL53L0X_RangingMeasurementData_t measure2; // extra left
+VL53L0X_RangingMeasurementData_t measure3; // original right
+VL53L0X_RangingMeasurementData_t measure4; // front
+VL53L0X_RangingMeasurementData_t measure5; // extra right
 
-void initializeTOF()
+// struct for represent the Point in the maze (Cell position)
+struct Point
 {
+  int x;
+  int y;
+};
 
-  pinMode(SHT_LOX1, OUTPUT);
-  pinMode(SHT_LOX2, OUTPUT);
-  pinMode(SHT_LOX3, OUTPUT);
-  pinMode(SHT_LOX4, OUTPUT);
-  pinMode(SHT_LOX5, OUTPUT);
+enum Orient
+{
+  NORTH = ORIENT_OFFSET + 0,
+  EAST = ORIENT_OFFSET + 1,
+  SOUTH = ORIENT_OFFSET + 2,
+  WEST = ORIENT_OFFSET + 3
+};
 
-  Serial.println("Shutdown pins inited...");
-
-  digitalWrite(SHT_LOX1, LOW);
-  digitalWrite(SHT_LOX2, LOW);
-  digitalWrite(SHT_LOX3, LOW);
-  digitalWrite(SHT_LOX4, LOW);
-  digitalWrite(SHT_LOX5, LOW);
-
-  Serial.println("Both in reset mode...(pins are low)");
-}
-
+/*
+    Reset all sensors by setting all of their XSHUT pins low for delay(10), then set all XSHUT high to bring out of reset
+    Keep sensor #1 awake by keeping XSHUT pin high
+    Put all other sensors into shutdown by pulling XSHUT pins low
+    Initialize sensor #1 with lox.begin(new_i2c_address) Pick any number but 0x29 and it must be under 0x7F. Going with 0x30 to 0x3F is probably OK.
+    Keep sensor #1 awake, and now bring sensor #2 out of reset by setting its XSHUT pin high.
+    Initialize sensor #2 with lox.begin(new_i2c_address) Pick any number but 0x29 and whatever you set the first sensor to
+ */
 void setID()
 {
   // all reset
@@ -70,6 +74,7 @@ void setID()
   digitalWrite(SHT_LOX3, LOW);
   digitalWrite(SHT_LOX4, LOW);
   digitalWrite(SHT_LOX5, LOW);
+
   delay(10);
   // all unreset
   digitalWrite(SHT_LOX1, HIGH);
@@ -77,6 +82,7 @@ void setID()
   digitalWrite(SHT_LOX3, HIGH);
   digitalWrite(SHT_LOX4, HIGH);
   digitalWrite(SHT_LOX5, HIGH);
+
   delay(10);
 
   // activating LOX1 and reseting LOX2
@@ -86,6 +92,7 @@ void setID()
   digitalWrite(SHT_LOX4, LOW);
   digitalWrite(SHT_LOX5, LOW);
 
+  Serial.println("setId init");
   // initing LOX1
   if (!lox1.begin(LOX1_ADDRESS))
   {
@@ -110,7 +117,7 @@ void setID()
   digitalWrite(SHT_LOX3, HIGH);
   delay(10);
 
-  // initing LOX3
+  // initing LOX2
   if (!lox3.begin(LOX3_ADDRESS))
   {
     Serial.println(F("Failed to boot second VL53L0X"));
@@ -122,7 +129,7 @@ void setID()
   digitalWrite(SHT_LOX4, HIGH);
   delay(10);
 
-  // initing LOX4
+  // initing LOX2
   if (!lox4.begin(LOX4_ADDRESS))
   {
     Serial.println(F("Failed to boot second VL53L0X"));
@@ -130,223 +137,364 @@ void setID()
       ;
   }
 
-  // activating LOX5
   digitalWrite(SHT_LOX5, HIGH);
   delay(10);
-
+  // initing LOX2
   if (!lox5.begin(LOX5_ADDRESS))
   {
     Serial.println(F("Failed to boot second VL53L0X"));
     while (1)
       ;
   }
-}
 
-DistanceMetrix loadDistnaces()
+  Serial.println("SetID end");
+} // stop the right and left motors
+
+Orient orient = NORTH; // initial orientation of the mouse
+char pathString[1024]; // path string to store the path
+int pathLength = 0;    // length of the path
+
+// initial coordination of the mouse
+int X = 0;
+int Y = 0;
+
+void read_dual_sensors()
 {
-  lox1.rangingTest(&measure1, false);
+
+  lox1.rangingTest(&measure1, false); // pass in 'true' to get debug data printout!
   lox2.rangingTest(&measure2, false);
   lox3.rangingTest(&measure3, false);
-  lox4.rangingTest(&measure4, false);
-  lox5.rangingTest(&measure5, false);
+  lox4.rangingTest(&measure4, false); // pass in 'true' to get debug data printout!
+  lox5.rangingTest(&measure5, false); // pass in 'true' to get debug data printout!
 
-  DistanceMetrix distances;
-  distances.leftFront = measure1.RangeMilliMeter;
-  distances.leftBack = measure2.RangeMilliMeter;
-  distances.rightFront = measure3.RangeMilliMeter;
-  distances.rightBack = measure5.RangeMilliMeter;
-  distances.front = measure4.RangeMilliMeter;
+  int frontD, leftD, rightD, backD;
+  if (measure1.RangeStatus != 4)
+  { // if not out of range
+    leftD = measure1.RangeMilliMeter;
+  }
+  else
+  {
+    Serial.print("Out of range");
+  }
 
-  return distances;
+  // print sensor two reading
+  if (measure2.RangeStatus != 4)
+  {
+    backD = measure2.RangeMilliMeter;
+  }
+  else
+  {
+    Serial.print("Out of range");
+  }
+
+  if (measure3.RangeStatus != 4)
+  {
+    rightD = measure3.RangeMilliMeter;
+  }
+  else
+  {
+    Serial.print("Out of range");
+  }
+
+  if (measure4.RangeStatus != 4)
+  {
+    frontD = measure4.RangeMilliMeter;
+  }
+  else
+  {
+    Serial.print("Out of range");
+  }
+
+  // Serial.printf("Front: %d, Left: %d, Right: %d, Back: %d\n", frontD, leftD, rightD, backD);
+
+  int value = random(2);
+  if (frontD > 50)
+  {
+    // forward(110, leftD, rightD, frontD);
+    moveMouseForward();
+    Point p = getPoint();
+    X = p.x;
+    Y = p.y;
+  }
+  else
+  {
+
+    int randNum = random(2);
+
+    if (randNum % 2 == 0)
+    {
+      if (leftD > 100)
+      {
+        stop();
+        left(120);
+        delay(ROTATE_TIME);
+        stop();
+        pathString[pathLength++] = 'l';
+        orient = getAbsDirection(orient, LEFT);
+      }
+      else if (rightD > 100)
+      {
+        stop();
+        right(120);
+        delay(ROTATE_TIME);
+        stop();
+        pathString[pathLength++] = 'r';
+        orient = getAbsDirection(orient, RIGHT);
+      }
+      else
+      {
+        stop();
+        right(120);
+        delay(REVERSE_ROTATE_TIME);
+        right(120);
+        delay(REVERSE_ROTATE_TIME);
+        stop();
+        pathString[pathLength++] = 'r';
+        pathString[pathLength++] = 'r';
+        orient = getAbsDirection(orient, RIGHT);
+        orient = getAbsDirection(orient, RIGHT);
+
+        // adjust the mouse if it is out of range
+        if (!inRange(leftD) || !inRange(rightD))
+        {
+          digitalWrite(in1A, HIGH);
+          digitalWrite(in2A, LOW);
+          digitalWrite(in1B, HIGH);
+          digitalWrite(in2B, LOW);
+          if (leftD < LOWER_THERSHOLD)
+          {
+            ledcWrite(pwmChannel1, 120);      // 1.65 V
+            ledcWrite(pwmChannel2, 120 - 30); // 1.65 V
+          }
+          else
+          {
+            ledcWrite(pwmChannel1, 120 - 30); // 1.65 V
+            ledcWrite(pwmChannel2, 120);      // 1.65 V
+          }
+        }
+        delay(150);
+        stop();
+      }
+    }
+    else
+    {
+      if (rightD > 100)
+      {
+        stop();
+        left(120);
+        delay(ROTATE_TIME);
+        stop();
+        pathString[pathLength++] = 'r';
+        orient = getAbsDirection(orient, LEFT);
+      }
+      else if (leftD > 100)
+      {
+        stop();
+        right(120);
+        delay(ROTATE_TIME);
+        stop();
+        pathString[pathLength++] = 'r';
+        orient = getAbsDirection(orient, RIGHT);
+      }
+      else
+      {
+        stop();
+        right(120);
+        delay(REVERSE_ROTATE_TIME);
+        right(120);
+        delay(REVERSE_ROTATE_TIME);
+        stop();
+        pathString[pathLength++] = 'r';
+        pathString[pathLength++] = 'r';
+        orient = getAbsDirection(orient, RIGHT);
+        orient = getAbsDirection(orient, RIGHT);
+
+        // adjust the mouse if it is out of range
+        if (!inRange(leftD) || !inRange(rightD))
+        {
+          digitalWrite(in1A, HIGH);
+          digitalWrite(in2A, LOW);
+          digitalWrite(in1B, HIGH);
+          digitalWrite(in2B, LOW);
+          if (leftD < LOWER_THERSHOLD)
+          {
+            ledcWrite(pwmChannel1, 120);      // 1.65 V
+            ledcWrite(pwmChannel2, 120 - 30); // 1.65 V
+          }
+          else
+          {
+            ledcWrite(pwmChannel1, 120 - 30); // 1.65 V
+            ledcWrite(pwmChannel2, 120);      // 1.65 V
+          }
+        }
+        delay(150);
+        stop();
+      }
+    }
+  }
 }
-
-// maze variables
-int X, Y;
-Orient orient;
-char pathString[BUFFER_MAX_LENGTH];
-int pathLength = 0;
 
 void setup()
 {
-  Serial.begin(115200);
-
-  // wait until serial port opens for native USB devices
-  while (!Serial)
-  {
-    delay(1);
-  }
-
-  initializeMotors();
-  initializeTOF();
-  Serial.println("Initializing the mouse...");
-
-  setID();
-  Serial.println("Everything is set...");
-  // initializeMaze(wallMap, floodMap); // array initialize routines goes here
-}
-
-void rotateMouse(int direction)
-{
-  switch (direction)
-  {
-  case RIGHT:
-    left(ROTATE_SPEED); // rotate the motors at given speed
-    delay(ROTATE_TIME); // maintain the rotation until specified time is expired
-    stop();
-    break;
-  case LEFT:
-    right(ROTATE_SPEED);
-    delay(ROTATE_TIME);
-    stop();
-    break;
-  case FORWARD:
-    break;
-  default:
-    break;
-  }
-}
-
-void mouseForward()
-{
-  // get the current time in miilis
-  int startTime = millis();
-  while (millis() - startTime < FORWARD_TIME)
-  {
-    // lox1.rangingTest(&measure1, false); // pass in 'true' to get debug data printout!
-    // lox2.rangingTest(&measure2, false);
-    // lox3.rangingTest(&measure3, false);
-    // lox4.rangingTest(&measure4, false); // pass in 'true' to get debug data printout!
-
-    // fetch the distance from the sensor
-    DistanceMetrix mat = loadDistnaces();
-    forward(FORWARD_SPEED);
-  }
-  stop();
-}
-
-void searchRun()
-{
-  X = 0, Y = 0; // reset the coordinates
-  while (true)
-  {
-    lox1.rangingTest(&measure1, false);
-    lox2.rangingTest(&measure2, false);
-    lox3.rangingTest(&measure3, false);
-    lox4.rangingTest(&measure4, false);
-    lox5.rangingTest(&measure5, false);
-
-    // fetch the distance from the sensor
-    int leftDistance = measure1.RangeMilliMeter;
-    int frontDistance = measure4.RangeMilliMeter;
-    int rightDistance = measure3.RangeMilliMeter;
-
-    // set the walls according to this distance
-    if (leftDistance < SIDE_MIN_DISTANCE)
-      setWalls({X, Y}, orient, LEFT);
-    if (frontDistance < FRONT_MIN_DISTANCE)
-      setWalls({X, Y}, orient, FORWARD);
-    if (rightDistance < SIDE_MIN_DISTANCE)
-      setWalls({X, Y}, orient, RIGHT);
-
-    // reset the flood map
-    resetFloodMap();
-    // update the floodmap based on wallMap
-    flooded();
-
-    // find the next point
-    Point next = findNext({X, Y}, orient);
-
-    if (next.x == X && next.y == Y)
-    {
-      // rotate the mouse
-      // rotateReverse(leftDistance, rightDistance);
-      // set the direction of the mouse
-      // orient = getAbsDirection(orient, RIGHT);
-      rotateMouse(RIGHT);
-      orient = getAbsDirection(orient, RIGHT);
-      pathString[pathLength++] = 'R';
-      continue;
-    }
-
-    int direction = findDirection({X, Y}, next, orient);
-    // rotate to the specified direction
-    rotateMouse(direction);
-    if (direction == LEFT)
-      pathString[pathLength++] = 'L';
-    else if (direction == RIGHT)
-      pathString[pathLength++] = 'R';
-
-    // forward the mouse
-    mouseForward(); // forward the mouse until it reaches the next cell
-    pathString[pathLength++] = 'F';
-
-    X = next.x;
-    Y = next.y;
-    orient = getAbsDirection(orient, direction);
-    // check whether mouse has reached the destination
-    if (isFinished({X, Y}))
-    {
-      break;
-    }
-  }
-}
-
-void returnToStart()
-{
-  // first take the full rotate
-  rotateMouse(RIGHT);
-  rotateMouse(RIGHT);
-
-  for (int i = pathLength - 1; i >= 0; i--)
-  {
-    char c = pathString[i];
-    if (c == 'F')
-    {
-      mouseForward();
-    }
-    else if (c == 'L')
-    {
-      rotateMouse(RIGHT);
-    }
-    else if (c == 'R')
-    {
-      rotateMouse(LEFT);
-    }
-  }
 }
 
 void loop()
 {
+}
 
-  // log("Starting the program...");
-  // blink the LED to indicate the start of the program
-  digitalWrite(LED_BUILTIN, HIGH);
-  delay(1000);
-  digitalWrite(LED_BUILTIN, LOW);
+int forward(int speed, int left, int right, int front)
+{
 
-  lox1.rangingTest(&measure1, false);
-  lox2.rangingTest(&measure2, false);
-  lox3.rangingTest(&measure3, false);
-  lox4.rangingTest(&measure4, false);
-  lox5.rangingTest(&measure5, false);
+  digitalWrite(in1A, HIGH);
+  digitalWrite(in2A, LOW);
+  digitalWrite(in1B, HIGH);
+  digitalWrite(in2B, LOW);
 
-  int front = measure4.RangeMilliMeter;
-  int right = measure3.RangeMilliMeter;
-  int left = measure1.RangeMilliMeter;
-
-  Serial.printf("%d, %d, %d", front, left, right);
-#if TEST
-  test();
-#endif
-
-#if SEARCH_RUN
-  searchRun();
-#endif
-
-#if FAST_RUN
-#endif
-
-  while (true)
+  if (front < FORWARD_MIN_DISTANCE)
   {
+    //   int front_ = measure4.RangeMilliMeter;
+    //   while (front_ > FORWARD_MIN_DISTANCE) {
+    //     lox1.rangingTest(&measure1, false);  // pass in 'true' to get debug data printout!
+    //     lox2.rangingTest(&measure2, false);
+    //     lox3.rangingTest(&measure3, false);
+    //     lox4.rangingTest(&measure4, false);  // pass in 'true' to get debug data printout!
+    //     ledcWrite(pwmChannel1, speed);  // 1.65 V
+    //     ledcWrite(pwmChannel2, speed);  // 1.65 V
+    //     front_ = measure4.RangeMilliMeter;
+    //   }
+    return -1;
   }
+  // ledcWrite(pwmChannel1, speed);  // 1.65 V
+  // ledcWrite(pwmChannel2, speed);  // 1.65 V
+  if ((inRange(left) && inRange(right)) || (left > CELL_SIZE && right > CELL_SIZE))
+  {
+    ledcWrite(pwmChannel1, speed); // 1.65 V
+    ledcWrite(pwmChannel2, speed); // 1.65 V
+  }
+  else if (left > CELL_SIZE)
+  {
+    // int delta_s = get_speed(right);
+    if (right < LOWER_THERSHOLD + 5)
+    {
+      ledcWrite(pwmChannel1, speed - 40); // 1.65 V
+      ledcWrite(pwmChannel2, speed);      // 1.65 V
+    }
+    else
+    {
+      ledcWrite(pwmChannel1, speed);      // 1.65 V
+      ledcWrite(pwmChannel2, speed - 40); // 1.65 V
+    }
+    delay(20);
+    return 35;
+  }
+  else if (right > CELL_SIZE)
+  {
+    int delta_s = get_speed(left);
+    if (left < LOWER_THERSHOLD + 5)
+    {
+      ledcWrite(pwmChannel1, speed);      // 1.65 V
+      ledcWrite(pwmChannel2, speed - 40); // 1.65 V
+    }
+    else
+    {
+      ledcWrite(pwmChannel1, speed - 40); // 1.65 V
+      ledcWrite(pwmChannel2, speed);      // 1.65 V
+    }
+    delay(20);
+    return 35;
+  }
+  else
+  {
+    if (left < LOWER_THERSHOLD)
+    {
+      ledcWrite(pwmChannel1, speed);      // 1.65 V
+      ledcWrite(pwmChannel2, speed - 40); // 1.65 V
+      delay(20);
+      return 35;
+    }
+    else if (right < LOWER_THERSHOLD)
+    {
+      ledcWrite(pwmChannel1, speed - 40); // 1.65 V
+      ledcWrite(pwmChannel2, speed);      // 1.65 V
+      delay(20);
+      return 35;
+    }
+    else
+    {
+      ledcWrite(pwmChannel1, speed); // 1.65 V
+      ledcWrite(pwmChannel2, speed); // 1.65 V
+    }
+  }
+  return 0;
+}
+
+void reverse(int speed)
+{
+  digitalWrite(in1A, LOW);
+  digitalWrite(in2A, HIGH);
+  digitalWrite(in1B, LOW);
+  digitalWrite(in2B, HIGH);
+  ledcWrite(pwmChannel1, speed); // 1.65 V
+  ledcWrite(pwmChannel2, speed); // 1.65 V
+}
+
+void right(int speed)
+{
+  digitalWrite(in1A, HIGH);
+  digitalWrite(in2A, LOW);
+  digitalWrite(in1B, LOW);
+  digitalWrite(in2B, HIGH);
+  ledcWrite(pwmChannel1, speed); // 1.65 V
+  ledcWrite(pwmChannel2, speed); // 1.65 V
+}
+
+void left(int speed)
+{
+  digitalWrite(in1A, LOW);
+  digitalWrite(in2A, HIGH);
+  digitalWrite(in1B, HIGH);
+  digitalWrite(in2B, LOW);
+  ledcWrite(pwmChannel1, speed); // 1.65 V
+  ledcWrite(pwmChannel2, speed); // 1.65 V
+}
+
+void stop()
+{
+  digitalWrite(in1A, LOW);
+  digitalWrite(in2A, LOW);
+  digitalWrite(in1B, LOW);
+  digitalWrite(in2B, LOW);
+}
+
+void moveMouseForward(void)
+{
+  // get the distance from the front TOF sensor at the beginning
+  int frontDistance = measure4.RangeMilliMeter;
+  int initialDistance = frontDistance;
+
+  int startTime = millis();
+  while (millis() - startTime < 2000)
+  {
+    lox1.rangingTest(&measure1, false); // pass in 'true' to get debug data printout!
+    lox2.rangingTest(&measure2, false);
+    lox3.rangingTest(&measure3, false);
+    lox4.rangingTest(&measure4, false); // pass in 'true' to get debug data printout!
+    lox5.rangingTest(&measure5, false); // pass in 'true' to get debug data printout!
+
+    int leftD = measure1.RangeMilliMeter;
+    int rightD = measure3.RangeMilliMeter;
+    int frontD = measure4.RangeMilliMeter;
+    int delta_t = forward(FORWARD_SPEED, leftD, rightD, frontD); // move the mouse forward under given speed // TODO:
+    if (delta_t == -1)
+      break;
+    startTime += delta_t;
+  }
+  // start the motor drive to move forward
+  //   while (frontDistance > initialDistance - CELL_SIZE) {
+  //     delay(50);
+  //     frontDistance = measure1.RangeMilliMeter; // distance from the front TOF sensor
+  //   }
+  // forward(125);
+  // delay(2000);
+  stop(); //  stop the motor drive
 }
