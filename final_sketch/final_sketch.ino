@@ -43,6 +43,25 @@ VL53L0X_RangingMeasurementData_t measure3; // original right
 VL53L0X_RangingMeasurementData_t measure4; // front
 VL53L0X_RangingMeasurementData_t measure5; // extra right
 
+void initializeMotors()
+{
+    // set the appropriate pins for motors
+    pinMode(pwmA, OUTPUT);
+    pinMode(pwmB, OUTPUT);
+    pinMode(in1A, OUTPUT);
+    pinMode(in2A, OUTPUT);
+    pinMode(in1B, OUTPUT);
+    pinMode(in2B, OUTPUT);
+
+    // Configuration of channel 0 with the chosen frequency and resolution
+    ledcSetup(pwmChannel1, frequency, resolution);
+    ledcSetup(pwmChannel2, frequency, resolution);
+
+    // Assigns the PWM channel to pin 23
+    ledcAttachPin(pwmA, pwmChannel1);
+    ledcAttachPin(pwmB, pwmChannel2);
+}
+
 void setID() {
   // all reset
   digitalWrite(SHT_LOX1, LOW);
@@ -165,6 +184,6 @@ void loop() {
   int left = measure1.RangeMilliMeter;
   int right = measure3.RangeMilliMeter;
 
-  Serial.println("%d, %d, %d", front, left, right);
+  Serial.printf("%d, %d, %d", front, left, right);
   delay(100);
 }
