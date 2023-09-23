@@ -7,8 +7,8 @@
 #define LED 2
 /* user configuratins and conatnt definitions */
 // program related constants
-#define TEST 1
-#define FOLLOW_TEST 0
+#define TEST 0
+#define FOLLOW_TEST 1
 #define SEARCH_RUN 0
 #define FAST_RUN 0
 
@@ -30,6 +30,11 @@
 #define MAX_PATH_LENGTH 200
 #define FRONT_MIN_DISTANCE 50
 #define SIDE_MIN_DISTANCE 100
+
+#define LEFT_MIN_THRESHOLD 50
+#define RIGHT_MIN_THRESHOLD 50
+#define LEFT_MAX_THRESHOLD 55
+#define RIGHT_MAX_THRESHOLD 55
 
 #define BUFFER_MAX_LENGTH 1024
 /* end of config info and constants */
@@ -189,43 +194,48 @@ int pathLength = 0;
 //-----------------------------------------------------------------
 AsyncWebServer server(80);
 
-const char* ssid = "Galaxy";          // Your WiFi SSID
-const char* password = "helloworld";  // Your WiFi Password
+const char *ssid = "Galaxy";		 // Your WiFi SSID
+const char *password = "helloworld"; // Your WiFi Password
 
-void recvMsg(uint8_t *data, size_t len){
-  WebSerial.println("Received Data...");
-  String d = "";
-  for(int i=0; i < len; i++){
-    d += char(data[i]);
-  }
-  WebSerial.println(d);
-  if (d == "ON"){
-    digitalWrite(LED, HIGH);
-  }
-  if (d=="OFF"){
-    digitalWrite(LED, LOW);
-  }
+void recvMsg(uint8_t *data, size_t len)
+{
+	WebSerial.println("Received Data...");
+	String d = "";
+	for (int i = 0; i < len; i++)
+	{
+		d += char(data[i]);
+	}
+	WebSerial.println(d);
+	if (d == "ON")
+	{
+		digitalWrite(LED, HIGH);
+	}
+	if (d == "OFF")
+	{
+		digitalWrite(LED, LOW);
+	}
 }
 //-----------------------------------------------------------------
 
 void setup()
 {
 	Serial.begin(115200);
-  //---------------------------------------------------------------
-  pinMode(LED, OUTPUT);
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
-  if (WiFi.waitForConnectResult() != WL_CONNECTED) {
-    Serial.printf("WiFi Failed!\n");
-    return;
-  }
-  Serial.print("IP Address: ");
-  Serial.println(WiFi.localIP());
-  // WebSerial is accessible at "<IP Address>/webserial" in browser
-  WebSerial.begin(&server);
-  WebSerial.msgCallback(recvMsg);
-  server.begin();
-  //---------------------------------------------------------------
+	//---------------------------------------------------------------
+	pinMode(LED, OUTPUT);
+	WiFi.mode(WIFI_STA);
+	WiFi.begin(ssid, password);
+	if (WiFi.waitForConnectResult() != WL_CONNECTED)
+	{
+		Serial.printf("WiFi Failed!\n");
+		return;
+	}
+	Serial.print("IP Address: ");
+	Serial.println(WiFi.localIP());
+	// WebSerial is accessible at "<IP Address>/webserial" in browser
+	WebSerial.begin(&server);
+	WebSerial.msgCallback(recvMsg);
+	server.begin();
+	//---------------------------------------------------------------
 	// wait until serial port opens for native USB devices
 	while (!Serial)
 	{
@@ -470,86 +480,138 @@ void rotateReverse(int leftD, int rightD)
 	stop();
 }
 
-int forward(int speed, DistanceMetrix dt)
+// int forward(int speed, DistanceMetrix dt)
+// {
+// 	digitalWrite(in1A, HIGH);
+// 	digitalWrite(in2A, LOW);
+// 	digitalWrite(in1B, HIGH);
+// 	digitalWrite(in2B, LOW);
+
+// 	if (dt.front < FRONT_MIN_DISTANCE)
+// 	{
+// 		return -1;
+// 	}
+
+// 	if (inRange(dt.leftFront) && inRange(dt.rightFront) || ((dt.leftBack > CELL_SIZE || dt.leftFront > CELL_SIZE) && (dt.rightBack > CELL_SIZE || dt.rightFront > CELL_SIZE)))
+// 	{
+// 		ledcWrite(pwmChannel1, speed); // 1.65 V
+// 		ledcWrite(pwmChannel2, speed); // 1.65 V
+// 	}
+// 	else if (dt.leftBack > CELL_SIZE || dt.leftFront > CELL_SIZE)
+// 	{
+// 		if (dt.rightFront < LOWER_THERSHOLD)
+// 		{
+// 			ledcWrite(pwmChannel1, speed - 40); // 1.65 V
+// 			ledcWrite(pwmChannel2, speed);		// 1.65 V
+// 			delay(20);
+// 			return 35;
+// 		}
+// 		else if (dt.rightFront > HIGHER_THRESHOLD)
+// 		{
+// 			ledcWrite(pwmChannel1, speed);		// 1.65 V
+// 			ledcWrite(pwmChannel2, speed - 40); // 1.65 V
+// 			delay(20);
+// 			return 35;
+// 		}
+// 		else
+// 		{
+// 			ledcWrite(pwmChannel1, speed); // 1.65 V
+// 			ledcWrite(pwmChannel2, speed);
+// 		}
+// 	} else if (dt.rightBack > CELL_SIZE || dt.rightFront > CELL_SIZE)
+// 	{
+// 		if (dt.leftFront < LOWER_THERSHOLD)
+// 		{
+// 			ledcWrite(pwmChannel1, speed);		// 1.65 V
+// 			ledcWrite(pwmChannel2, speed - 40); // 1.65 V
+// 			delay(20);
+// 			return 35;
+// 		}
+// 		else if (dt.leftFront > HIGHER_THRESHOLD)
+// 		{
+// 			ledcWrite(pwmChannel1, speed - 40); // 1.65 V
+// 			ledcWrite(pwmChannel2, speed);		// 1.65 V
+// 			delay(20);
+// 			return 35;
+// 		}
+// 		else
+// 		{
+// 			ledcWrite(pwmChannel1, speed); // 1.65 V
+// 			ledcWrite(pwmChannel2, speed);
+// 		}
+// 	}
+// 	else
+// 	{
+// 		if (dt.leftFront < LOWER_THERSHOLD)
+// 		{
+// 			ledcWrite(pwmChannel1, speed);		// 1.65 V
+// 			ledcWrite(pwmChannel2, speed - 40); // 1.65 V
+// 			delay(20);
+// 			return 35;
+// 		}
+// 		else if (dt.rightFront < LOWER_THERSHOLD)
+// 		{
+// 			ledcWrite(pwmChannel1, speed - 40); // 1.65 V
+// 			ledcWrite(pwmChannel2, speed);		// 1.65 V
+// 			delay(20);
+// 			return 35;
+// 		}
+// 		else
+// 		{
+// 			ledcWrite(pwmChannel1, speed); // 1.65 V
+// 			ledcWrite(pwmChannel2, speed);
+// 		}
+// 	}
+// 	return 0;
+// }
+
+bool isLeftRange(int distance)
+{
+	return distance > LEFT_MIN_THRESHOLD && distance < LEFT_MAX_THRESHOLD;
+}
+
+bool isRightRange(int distance)
+{
+	return distance > RIGHT_MIN_THRESHOLD && distance < RIGHT_MAX_THRESHOLD;
+}
+
+int mouseForward(int speed, DistanceMatrix dt)
 {
 	digitalWrite(in1A, HIGH);
 	digitalWrite(in2A, LOW);
 	digitalWrite(in1B, HIGH);
 	digitalWrite(in2B, LOW);
-
-	if (dt.front < FRONT_MIN_DISTANCE)
+	if (dt.front < FRONT_MAX_DISTANCE)
 	{
 		return -1;
 	}
 
-	if (inRange(dt.leftFront) && inRange(dt.rightFront) || ((dt.leftBack > CELL_SIZE || dt.leftFront > CELL_SIZE) && (dt.rightBack > CELL_SIZE || dt.rightFront > CELL_SIZE)))
+	if (isLeftRange(dt.leftFront) && isRightRange(dt.rightFront))
 	{
 		ledcWrite(pwmChannel1, speed); // 1.65 V
 		ledcWrite(pwmChannel2, speed); // 1.65 V
 	}
-	else if (dt.leftBack > CELL_SIZE || dt.leftFront > CELL_SIZE)
-	{
-		if (dt.rightFront < LOWER_THERSHOLD)
-		{
-			ledcWrite(pwmChannel1, speed - 40); // 1.65 V
-			ledcWrite(pwmChannel2, speed);		// 1.65 V
-			delay(20);
-			return 35;
-		}
-		else if (dt.rightFront > HIGHER_THRESHOLD)
-		{
-			ledcWrite(pwmChannel1, speed);		// 1.65 V
-			ledcWrite(pwmChannel2, speed - 40); // 1.65 V
-			delay(20);
-			return 35;
-		}
-		else
-		{
-			ledcWrite(pwmChannel1, speed); // 1.65 V
-			ledcWrite(pwmChannel2, speed);
-		}
-	} else if (dt.rightBack > CELL_SIZE || dt.rightFront > CELL_SIZE)
-	{
-		if (dt.leftFront < LOWER_THERSHOLD)
-		{
-			ledcWrite(pwmChannel1, speed);		// 1.65 V
-			ledcWrite(pwmChannel2, speed - 40); // 1.65 V
-			delay(20);
-			return 35;
-		}
-		else if (dt.leftFront > HIGHER_THRESHOLD)
-		{
-			ledcWrite(pwmChannel1, speed - 40); // 1.65 V
-			ledcWrite(pwmChannel2, speed);		// 1.65 V
-			delay(20);
-			return 35;
-		}
-		else
-		{
-			ledcWrite(pwmChannel1, speed); // 1.65 V
-			ledcWrite(pwmChannel2, speed);
-		}
-	}
 	else
 	{
-		if (dt.leftFront < LOWER_THERSHOLD)
+		// mouse is not in the middle of the path
+		if (dt.leftFront < LEFT_MIN_THRESHOLD && dt.rightFront > RIGHT_MAX_THRESHOLD)
 		{
 			ledcWrite(pwmChannel1, speed);		// 1.65 V
-			ledcWrite(pwmChannel2, speed - 40); // 1.65 V
+			ledcWrite(pwmChannel2, speed - 30); // 1.65 V
 			delay(20);
-			return 35;
+			return 25;
 		}
-		else if (dt.rightFront < LOWER_THERSHOLD)
+		else if (dt.leftFront > LEFT_MAX_THRESHOLD && dt.rightFront < RIGHT_MIN_THRESHOLD)
 		{
-			ledcWrite(pwmChannel1, speed - 40); // 1.65 V
+			ledcWrite(pwmChannel1, speed - 30); // 1.65 V
 			ledcWrite(pwmChannel2, speed);		// 1.65 V
 			delay(20);
-			return 35;
+			return 25;
 		}
 		else
 		{
 			ledcWrite(pwmChannel1, speed); // 1.65 V
-			ledcWrite(pwmChannel2, speed);
+			ledcWrite(pwmChannel2, speed); // 1.65 V
 		}
 	}
 	return 0;
@@ -1029,6 +1091,10 @@ void followTest()
 	int frontDistance = measure4.RangeMilliMeter;
 	int leftDistance = measure1.RangeMilliMeter;
 	int rightDistance = measure3.RangeMilliMeter;
+	int leftBackDistance = measure2.RangeMilliMeter;
+	int rightBackDistance = measure5.RangeMilliMeter;
+
+	WebSerial.printf("front: %d, left: %d, right: %d, leftBack: %d, rightBack: %d\n", frontDistance, leftDistance, rightDistance, leftBackDistance, rightBackDistance);
 
 	if (frontDistance > CELL_SIZE)
 	{
