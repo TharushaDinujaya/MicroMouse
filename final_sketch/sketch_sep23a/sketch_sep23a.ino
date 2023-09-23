@@ -8,33 +8,33 @@
 /* user configuratins and conatnt definitions */
 // program related constants
 #define TEST 0
-#define FOLLOW_TEST 1
-#define SEARCH_RUN 0
+#define FOLLOW_TEST 0
+#define SEARCH_RUN 1
 #define FAST_RUN 0
 
 #define ROUNDS 1
 
-#define FINISHING_X 7
-#define FINISHING_Y 7
+int FINISHING_X =  8;
+int FINISHING_Y = 3;
 
 // Time related constants
 #define FORWARD_TIME 2000
 
 #define ROTATE_TIME 440
 #define ROTATE_SPEED 120
-#define FORWARD_SPEED 110
+#define FORWARD_SPEED 110 // 110
 #define REVERSE_ROTATE_TIME 560
 #define LOWER_THERSHOLD 50
 #define HIGHER_THRESHOLD 55
 #define CELL_SIZE 144
 #define MAX_PATH_LENGTH 200
-#define FRONT_MIN_DISTANCE 50
+#define FRONT_MIN_DISTANCE 80
 #define SIDE_MIN_DISTANCE 100
 
-#define LEFT_MIN_THRESHOLD 50
-#define RIGHT_MIN_THRESHOLD 50
-#define LEFT_MAX_THRESHOLD 55
-#define RIGHT_MAX_THRESHOLD 55
+#define LEFT_MIN_THRESHOLD 67
+#define RIGHT_MIN_THRESHOLD 47
+#define LEFT_MAX_THRESHOLD 74
+#define RIGHT_MAX_THRESHOLD 53
 
 #define BUFFER_MAX_LENGTH 1024
 /* end of config info and constants */
@@ -96,7 +96,7 @@ struct DistanceMetrix
 };
 
 // maze related constants and definitions
-#define MAZE_SIZE 14
+#define MAZE_SIZE 10
 #define MAZE_CELLS (MAZE_SIZE * MAZE_SIZE)
 #define UNDEFINED 9999
 #define ORIENT_OFFSET 100
@@ -194,8 +194,8 @@ int pathLength = 0;
 //-----------------------------------------------------------------
 AsyncWebServer server(80);
 
-const char *ssid = "Galaxy";		 // Your WiFi SSID
-const char *password = "helloworld"; // Your WiFi Password
+const char *ssid = "Dialog 4G 801";		 // Your WiFi SSID
+const char *password = "e35076c3"; // Your WiFi Password
 
 void recvMsg(uint8_t *data, size_t len)
 {
@@ -272,16 +272,23 @@ void loop()
 #if FOLLOW_TEST
 	followTest();
 #endif
-
+  orient = NORTH;
+  X = 0, Y = 0;
 #if SEARCH_RUN
 	for (int i = 0; i < ROUNDS; i++)
 	{
+    
+    FINISHING_X = 8;
+    FINISHING_Y = 3;
 		searchRun();
 		// inidicate that mouse has reached the destination
 		digitalWrite(BUILTIN_LED, HIGH);
 		delay(2500);
 		digitalWrite(BUILTIN_LED, LOW);
-		returnToStart();
+    // set the new finishing x and y
+    FINISHING_X = 0;
+    FINISHING_Y = 0;
+		searchRun();
 	}
 
 	while (true)
@@ -575,13 +582,15 @@ bool isRightRange(int distance)
 	return distance > RIGHT_MIN_THRESHOLD && distance < RIGHT_MAX_THRESHOLD;
 }
 
-int mouseForward(int speed, DistanceMatrix dt)
+int forward(int speed, DistanceMetrix dt)
 {
 	digitalWrite(in1A, HIGH);
 	digitalWrite(in2A, LOW);
 	digitalWrite(in1B, HIGH);
 	digitalWrite(in2B, LOW);
-	if (dt.front < FRONT_MAX_DISTANCE)
+
+  WebSerial.printf("front: %d, left: %d, right: %d, lftBack: %d, rightBack: %d\n", dt.front, dt.leftFront, dt.rightFront, dt.leftBack, dt.rightBack);;
+	if (dt.front < FRONT_MIN_DISTANCE)
 	{
 		return -1;
 	}
@@ -591,22 +600,22 @@ int mouseForward(int speed, DistanceMatrix dt)
 		ledcWrite(pwmChannel1, speed); // 1.65 V
 		ledcWrite(pwmChannel2, speed); // 1.65 V
 	}
-	else
+	else if (dt.leftFront < CELL_SIZE && dt.rightFront < CELL_SIZE)
 	{
 		// mouse is not in the middle of the path
 		if (dt.leftFront < LEFT_MIN_THRESHOLD && dt.rightFront > RIGHT_MAX_THRESHOLD)
 		{
 			ledcWrite(pwmChannel1, speed);		// 1.65 V
-			ledcWrite(pwmChannel2, speed - 30); // 1.65 V
-			delay(20);
-			return 25;
+			ledcWrite(pwmChannel2, speed - 20); // 1.65 V
+			// delay(20);
+			return 15;
 		}
 		else if (dt.leftFront > LEFT_MAX_THRESHOLD && dt.rightFront < RIGHT_MIN_THRESHOLD)
 		{
-			ledcWrite(pwmChannel1, speed - 30); // 1.65 V
+			ledcWrite(pwmChannel1, speed - 20); // 1.65 V
 			ledcWrite(pwmChannel2, speed);		// 1.65 V
-			delay(20);
-			return 25;
+			// delay(20);
+			return 15;
 		}
 		else
 		{
@@ -614,6 +623,45 @@ int mouseForward(int speed, DistanceMatrix dt)
 			ledcWrite(pwmChannel2, speed); // 1.65 V
 		}
 	}
+  else if (dt.rightFront > CELL_SIZE){
+    if ( dt.leftFront > LEFT_MAX_THRESHOLD + 5){
+      		ledcWrite(pwmChannel1, speed - 20); // 1.65 V
+			    ledcWrite(pwmChannel2, speed);		// 1.65 V
+			    // delay(20);
+			    return 15;
+    }
+    else if (dt.leftFront < LEFT_MIN_THRESHOLD){
+			ledcWrite(pwmChannel1, speed);		// 1.65 V
+			ledcWrite(pwmChannel2, speed - 20); // 1.65 V
+			// delay(20);
+			return 15;
+
+    }else{
+      ledcWrite(pwmChannel1, speed); // 1.65 V
+		  ledcWrite(pwmChannel2, speed); // 1.65 V
+
+    }
+  }
+  else if (dt.leftFront > CELL_SIZE){
+    if (dt.rightFront > RIGHT_MAX_THRESHOLD + 5){
+      		ledcWrite(pwmChannel1, speed); // 1.65 V
+			    ledcWrite(pwmChannel2, speed-20);		// 1.65 V
+			    // delay(20);
+			    return 15;
+    }
+    else if (dt.rightFront > RIGHT_MIN_THRESHOLD){
+        	ledcWrite(pwmChannel1, speed-20); // 1.65 V
+			    ledcWrite(pwmChannel2, speed);		// 1.65 V
+			    // delay(20);
+			    return 15;
+
+    }
+    else{
+        ledcWrite(pwmChannel1, speed); // 1.65 V
+			  ledcWrite(pwmChannel2, speed);		// 1.65 V
+
+    }
+  }
 	return 0;
 }
 
@@ -970,8 +1018,8 @@ void mouseForward()
 // search run function implementation
 void searchRun()
 {
-	X = 0, Y = 0; // reset the coordinates
-	orient = NORTH;
+	// X = 0, Y = 0; // reset the coordinates
+	// orient = NORTH;
 	pathLength = 0;
 
 	while (true)
@@ -1031,18 +1079,34 @@ void searchRun()
 		{
 			break;
 		}
+
+    WebSerial.printf("(%d, %d)\n", X, Y);
 	}
 }
 
 // function to return to starting positions
 void returnToStart()
 {
-	// first take the full rotate
-	rotateMouse(RIGHT);
-	rotateMouse(RIGHT);
+    lox1.rangingTest(&measure1, false);
+		lox2.rangingTest(&measure2, false);
+		lox3.rangingTest(&measure3, false);
+		lox4.rangingTest(&measure4, false);
+		lox5.rangingTest(&measure5, false);
 
+		// fetch the distance from the sensor
+		int leftDistance = measure1.RangeMilliMeter;
+		int frontDistance = measure4.RangeMilliMeter;
+		int rightDistance = measure3.RangeMilliMeter;
+
+	// first take the full rotate
+	// rotateMouse(RIGHT);
+	// rotateMouse(RIGHT);
+  rotateReverse(leftDistance, rightDistance);
+
+  WebSerial.printf("path length: %d\n", pathLength);
 	for (int i = pathLength - 1; i >= 0; i--)
 	{
+    WebSerial.printf("chracter: %c\n", pathString[i]);
 		char c = pathString[i];
 		if (c == 'F')
 		{
@@ -1058,8 +1122,21 @@ void returnToStart()
 		}
 	}
 
-	rotateMouse(RIGHT);
-	rotateMouse(RIGHT);
+	  lox1.rangingTest(&measure1, false);
+		lox2.rangingTest(&measure2, false);
+		lox3.rangingTest(&measure3, false);
+		lox4.rangingTest(&measure4, false);
+		lox5.rangingTest(&measure5, false);
+
+		// fetch the distance from the sensor
+		leftDistance = measure1.RangeMilliMeter;
+		frontDistance = measure4.RangeMilliMeter;
+		rightDistance = measure3.RangeMilliMeter;
+
+	// first take the full rotate
+	// rotateMouse(RIGHT);
+	// rotateMouse(RIGHT);
+  rotateReverse(leftDistance, rightDistance);
 }
 
 // test function implementation
@@ -1112,7 +1189,6 @@ void followTest()
 	}
 	else
 	{
-		rotateMouse(RIGHT);
-		rotateMouse(RIGHT);
+		rotateReverse(leftDistance, rightDistance);
 	}
 }
