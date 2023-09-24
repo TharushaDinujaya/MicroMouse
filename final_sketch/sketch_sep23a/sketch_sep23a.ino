@@ -17,23 +17,25 @@
 int FINISHING_X =  2;
 int FINISHING_Y = 2;
 
+bool returnRun = false;
+
 // Time related constants
-#define FORWARD_TIME 1850
+#define FORWARD_TIME 1800
 
 #define ROTATE_TIME 440
 #define ROTATE_SPEED 120
-#define FORWARD_SPEED 110 // 110
+#define FORWARD_SPEED 140 // 110
 #define REVERSE_ROTATE_TIME 560
 #define LOWER_THERSHOLD 50
 #define HIGHER_THRESHOLD 55
 #define CELL_SIZE 144
 #define MAX_PATH_LENGTH 200
-#define FRONT_MIN_DISTANCE 80
+#define FRONT_MIN_DISTANCE 58
 #define SIDE_MIN_DISTANCE 100
 
-#define LEFT_MIN_THRESHOLD 67
-#define RIGHT_MIN_THRESHOLD 47
-#define LEFT_MAX_THRESHOLD 74
+#define LEFT_MIN_THRESHOLD  67
+#define RIGHT_MIN_THRESHOLD 46 // 47
+#define LEFT_MAX_THRESHOLD  74
 #define RIGHT_MAX_THRESHOLD 53
 
 #define BUFFER_MAX_LENGTH 1024
@@ -277,18 +279,36 @@ void loop()
 #if SEARCH_RUN
 	for (int i = 0; i < ROUNDS; i++)
 	{
-    
-    FINISHING_X = 8;
-    FINISHING_Y = 3;
+    returnRun = false;
+    FINISHING_X = 6;
+    FINISHING_Y = 2;
+    orient = NORTH;
 		searchRun();
 		// inidicate that mouse has reached the destination
-		digitalWrite(BUILTIN_LED, HIGH);
-		delay(2500);
-		digitalWrite(BUILTIN_LED, LOW);
+		for (int k = 0; k < 5; k++) {
+      digitalWrite(BUILTIN_LED, HIGH);
+		  delay(500);
+		  digitalWrite(BUILTIN_LED, LOW);
+    }
     // set the new finishing x and y
     FINISHING_X = 0;
     FINISHING_Y = 0;
+    returnRun = true;
+
 		searchRun();
+
+    lox1.rangingTest(&measure1, false);
+		lox2.rangingTest(&measure2, false);
+		lox3.rangingTest(&measure3, false);
+		lox4.rangingTest(&measure4, false);
+		lox5.rangingTest(&measure5, false);
+
+		// fetch the distance from the sensor
+		int leftDistance = measure1.RangeMilliMeter;
+		int frontDistance = measure4.RangeMilliMeter;
+		int rightDistance = measure3.RangeMilliMeter;
+
+    rotateReverse(leftDistance, rightDistance);
 	}
 
 	while (true)
@@ -589,7 +609,7 @@ int forward(int speed, DistanceMetrix dt)
 	digitalWrite(in1B, HIGH);
 	digitalWrite(in2B, LOW);
 
-  WebSerial.printf("front: %d, left: %d, right: %d, lftBack: %d, rightBack: %d\n", dt.front, dt.leftFront, dt.rightFront, dt.leftBack, dt.rightBack);;
+  WebSerial.printf("front: %d, left: %d, right: %d, lftBack: %d, rightBack: %d\n", dt.front, dt.leftFront, dt.rightFront, dt.leftBack, dt.rightBack);
 	if (dt.front < FRONT_MIN_DISTANCE)
 	{
 		return -1;
@@ -606,13 +626,13 @@ int forward(int speed, DistanceMetrix dt)
 		if (dt.leftFront < LEFT_MIN_THRESHOLD && dt.rightFront > RIGHT_MAX_THRESHOLD)
 		{
 			ledcWrite(pwmChannel1, speed);		// 1.65 V
-			ledcWrite(pwmChannel2, speed - 20); // 1.65 V
+			ledcWrite(pwmChannel2, speed - 25); // 1.65 V
 			// delay(20);
 			return 15;
 		}
 		else if (dt.leftFront > LEFT_MAX_THRESHOLD && dt.rightFront < RIGHT_MIN_THRESHOLD)
 		{
-			ledcWrite(pwmChannel1, speed - 20); // 1.65 V
+			ledcWrite(pwmChannel1, speed - 25); // 1.65 V
 			ledcWrite(pwmChannel2, speed);		// 1.65 V
 			// delay(20);
 			return 15;
@@ -623,16 +643,17 @@ int forward(int speed, DistanceMetrix dt)
 			ledcWrite(pwmChannel2, speed); // 1.65 V
 		}
 	}
+  //when only one wall is present
   else if (dt.rightFront > CELL_SIZE){
-    if ( dt.leftFront > LEFT_MAX_THRESHOLD + 5){
-      		ledcWrite(pwmChannel1, speed - 20); // 1.65 V
+    if ( dt.leftFront > 57){
+      		ledcWrite(pwmChannel1, speed - 25); // 1.65 V
 			    ledcWrite(pwmChannel2, speed);		// 1.65 V
 			    // delay(20);
 			    return 15;
     }
-    else if (dt.leftFront < LEFT_MIN_THRESHOLD){
+    else if (dt.leftFront < 67){
 			ledcWrite(pwmChannel1, speed);		// 1.65 V
-			ledcWrite(pwmChannel2, speed - 20); // 1.65 V
+			ledcWrite(pwmChannel2, speed - 25); // 1.65 V
 			// delay(20);
 			return 15;
 
@@ -643,14 +664,14 @@ int forward(int speed, DistanceMetrix dt)
     }
   }
   else if (dt.leftFront > CELL_SIZE){
-    if (dt.rightFront > RIGHT_MAX_THRESHOLD + 5){
+    if (dt.rightFront > 47 ){
       		ledcWrite(pwmChannel1, speed); // 1.65 V
-			    ledcWrite(pwmChannel2, speed-20);		// 1.65 V
+			    ledcWrite(pwmChannel2, speed-25);		// 1.65 V
 			    // delay(20);
 			    return 15;
     }
-    else if (dt.rightFront > RIGHT_MIN_THRESHOLD){
-        	ledcWrite(pwmChannel1, speed-20); // 1.65 V
+    else if (dt.rightFront < 37){
+        	ledcWrite(pwmChannel1, speed-25); // 1.65 V
 			    ledcWrite(pwmChannel2, speed);		// 1.65 V
 			    // delay(20);
 			    return 15;
@@ -738,11 +759,15 @@ void resetFloodMap()
 		}
 	}
 
-	// now set the destination cell flood index to zero
-	floodMap[FINISHING_X][FINISHING_Y] = 0;
-	floodMap[FINISHING_X][FINISHING_Y + 1] = 0;
-	floodMap[FINISHING_X + 1][FINISHING_Y] = 0;
-	floodMap[FINISHING_X + 1][FINISHING_Y + 1] = 0;
+	if (!returnRun) {
+    // now set the destination cell flood index to zero
+    floodMap[FINISHING_X][FINISHING_Y] = 0;
+    floodMap[FINISHING_X][FINISHING_Y + 1] = 0;
+    floodMap[FINISHING_X + 1][FINISHING_Y] = 0;
+    floodMap[FINISHING_X + 1][FINISHING_Y + 1] = 0;
+  } else {
+    floodMap[0][0] = 0;
+  }
 }
 
 // function for completly flooded the maze with the flood indexes based on the wall map
@@ -753,11 +778,15 @@ void flooded()
 	// reset the queue also
 	resetQueue();
 
-	// add the finishing coordinates to the queue
-	enqueue({FINISHING_X, FINISHING_Y});
-	enqueue({FINISHING_X, FINISHING_Y + 1});
-	enqueue({FINISHING_X + 1, FINISHING_Y});
-	enqueue({FINISHING_X + 1, FINISHING_Y + 1});
+	if (!returnRun) {
+    // add the finishing coordinates to the queue
+    enqueue({FINISHING_X, FINISHING_Y});
+    enqueue({FINISHING_X, FINISHING_Y + 1});
+    enqueue({FINISHING_X + 1, FINISHING_Y});
+    enqueue({FINISHING_X + 1, FINISHING_Y + 1});
+  } else {
+    enqueue({0, 0});
+  }
 
 	while (!queueEmpty())
 	{
@@ -826,6 +855,7 @@ void setWalls(Point current, Orient orient, int direction)
 	default:
 		break;
 	}
+
 
 	wallMap[current.x][current.y] |= currentWall;
 	if (isValid(next))
@@ -896,8 +926,10 @@ int findDirection(Point current, Point next, Orient orient)
 bool isFinished(Point current)
 {
 	int x = current.x, y = current.y;
-
-	return (x == FINISHING_X || x == FINISHING_X + 1) && (y == FINISHING_Y || y == FINISHING_Y + 1);
+  if (!returnRun) {
+    	return (x == FINISHING_X || x == FINISHING_X + 1) && (y == FINISHING_Y || y == FINISHING_Y + 1);
+  }
+  return x == 0 && y == 0;
 }
 
 // helper function implementations
@@ -1038,10 +1070,13 @@ void searchRun()
 		// set the walls according to this distance
 		if (leftDistance < SIDE_MIN_DISTANCE)
 			setWalls({X, Y}, orient, LEFT);
+      WebSerial.println("Left Wall Setted");
 		if (frontDistance < FRONT_MIN_DISTANCE)
 			setWalls({X, Y}, orient, FORWARD);
+      WebSerial.println("Front Wall Setted");
 		if (rightDistance < SIDE_MIN_DISTANCE)
 			setWalls({X, Y}, orient, RIGHT);
+      WebSerial.println("Right Wall Setted");
 
 		// reset the flood map
 		resetFloodMap();
