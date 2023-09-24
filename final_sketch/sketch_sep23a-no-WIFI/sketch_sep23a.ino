@@ -1,8 +1,4 @@
 #include <Adafruit_VL53L0X.h>
-#include <WiFi.h>
-#include <AsyncTCP.h>
-#include <ESPAsyncWebServer.h>
-#include <WebSerial.h>
 
 #define LED 2
 /* user configuratins and conatnt definitions */
@@ -18,7 +14,6 @@
 #define FORWARD_TIME 1800
 #define ROTATE_TIME 440
 #define REVERSE_ROTATE_TIME 560
-#define REVERSE_SPEED 100
 
 // Speed related constants
 #define ROTATE_SPEED 120
@@ -208,55 +203,9 @@ int finalX = 2;
 int finalY = 2;
 bool returnRun = false; // to indicate return run or destination run
 
-/* Wifi Connection related definitions and setup routines */
-//----------------------------------------------------------------- //
-AsyncWebServer server(80);
-
-const char *ssid = "Galaxy";		 // Your WiFi SSID
-const char *password = "helloworld"; // Your WiFi Password
-
-void recvMsg(uint8_t *data, size_t len)
-{
-	WebSerial.println("Received Data...");
-	String d = "";
-	for (int i = 0; i < len; i++)
-	{
-		d += char(data[i]);
-	}
-	WebSerial.println(d);
-	if (d == "ON")
-	{
-		digitalWrite(LED, HIGH);
-	}
-	if (d == "OFF")
-	{
-		digitalWrite(LED, LOW);
-	}
-}
-
-//----------------------------------------------------------------- //
-
 void setup()
 {
 	Serial.begin(115200);
-
-	// --------------------------------------------------------------- //
-	pinMode(LED, OUTPUT);
-	WiFi.mode(WIFI_STA);
-	WiFi.begin(ssid, password);
-	if (WiFi.waitForConnectResult() != WL_CONNECTED)
-	{
-		Serial.printf("WiFi Failed!\n");
-		return;
-	}
-	Serial.print("IP Address: ");
-	Serial.println(WiFi.localIP());
-	// WebSerial is accessible at "<IP Address>/webserial" in browser
-	WebSerial.begin(&server);
-	WebSerial.msgCallback(recvMsg);
-	server.begin();
-	// --------------------------------------------------------------- //
-
 	// wait until serial port opens for native USB devices
 	while (!Serial)
 	{
@@ -270,7 +219,7 @@ void setup()
 	pinMode(SHT_LOX4, OUTPUT);
 	pinMode(SHT_LOX5, OUTPUT);
 
-	WebSerial.println("Shutdown pins inited...");
+	Serial.println("Shutdown pins inited...");
 
 	digitalWrite(SHT_LOX1, LOW);
 	digitalWrite(SHT_LOX2, LOW);
@@ -278,9 +227,9 @@ void setup()
 	digitalWrite(SHT_LOX4, LOW);
 	digitalWrite(SHT_LOX5, LOW);
 
-	WebSerial.println("Both in reset mode...(pins are low)");
+	Serial.println("Both in reset mode...(pins are low)");
 
-	WebSerial.println("Starting...");
+	Serial.println("Starting...");
 	setID();
 }
 
@@ -607,104 +556,14 @@ bool isRightRange(int distance)
 	return distance > RIGHT_MIN_THRESHOLD && distance < RIGHT_MAX_THRESHOLD;
 }
 
-int setDriverVoltages(int speed, int direction, int deduction)
-{
-	if (direction == FORWARD)
-	{
-		ledcWrite(pwmChannel1, speed); // 1.65 V
-		ledcWrite(pwmChannel2, speed); // 1.65 V
-		return 20;
-	}
-	else if (direction == LEFT)
-	{
-		ledcWrite(pwmChannel1, speed);			   // 1.65 V
-		ledcWrite(pwmChannel2, speed - deduction); // 1.65 V
-		retutn 20;
-	}
-	else
-	{
-		ledcWrite(pwmChannel1, speed - deduction); // 1.65 V
-		ledcWrite(pwmChannel2, speed);			   // 1.65 V
-	}
-	return 0;
-}
-
-int alignWithFrontLeft(int speed, int distance, int min, int max)
-{
-	if (distance < min)
-	{
-		return setDriverVoltages(speed, LEFT, 25);
-	}
-	else if (distance > max)
-	{
-		return setDriverVoltages(speed, RIGHT, 25);
-	}
-	else
-	{
-		return setDriverVoltages(speed, FORWARD, 0);
-	}
-	return 0;
-}
-
-int alignWithBackLeft(int speed, int distance, int min, int max)
-{
-	if (distance < min)
-	{
-		return setDriverVoltages(speed, RIGHT, 25);
-	}
-	else if (distance > max)
-	{
-		return setDriverVoltages(speed, LEFT, 25);
-	}
-	else
-	{
-		return setDriverVoltages(speed, FORWARD, 0);
-	}
-	return 0;
-}
-
-int alignWithFrontRight(int speed, int distance, int min, int max)
-{
-	if (distance < min)
-	{
-		return setDriverVoltages(speed, RIGHT, 25);
-	}
-	else if (distance > max)
-	{
-		return setDriverVoltages(speed, LEFT, 25);
-	}
-	else
-	{
-		return setDriverVoltages(speed, FORWARD, 0);
-	}
-	return 0;
-}
-
-int alignWithBackRight(int speed, int distance, int min, int max)
-{
-	if (distance < min)
-	{
-		return setDriverVoltages(speed, LEFT, 25);
-	}
-	else if (distance > max)
-	{
-		return setDriverVoltages(speed, RIGHT, 25);
-	}
-	else
-	{
-		return setDriverVoltages(speed, FORWARD, 0);
-	}
-	return 0;
-}
-
 int forward(int speed, DistanceMetrix dt)
 {
-	WebSerial.printf("front: %d, left: %d, right: %d, lftBack: %d, rightBack: %d\n", dt.front, dt.leftFront, dt.rightFront, dt.leftBack, dt.rightBack);
 	digitalWrite(in1A, HIGH);
 	digitalWrite(in2A, LOW);
 	digitalWrite(in1B, HIGH);
 	digitalWrite(in2B, LOW);
 
+	Serial.printf("front: %d, left: %d, right: %d, lftBack: %d, rightBack: %d\n", dt.front, dt.leftFront, dt.rightFront, dt.leftBack, dt.rightBack);
 	if (dt.front < FRONT_MIN_DISTANCE)
 	{
 		return -1;
@@ -712,74 +571,76 @@ int forward(int speed, DistanceMetrix dt)
 
 	if (isLeftRange(dt.leftFront) && isRightRange(dt.rightFront))
 	{
-		setDriverVoltages(speed, FORWARD, 0);
+		ledcWrite(pwmChannel1, speed); // 1.65 V
+		ledcWrite(pwmChannel2, speed); // 1.65 V
 	}
 	else if (dt.leftFront < CELL_SIZE && dt.rightFront < CELL_SIZE)
 	{
 		// mouse is not in the middle of the path
 		if (dt.leftFront < LEFT_MIN_THRESHOLD && dt.rightFront > RIGHT_MAX_THRESHOLD)
 		{
-			setDriverVoltages(speed, LEFT, 25);
+			ledcWrite(pwmChannel1, speed);		// 1.65 V
+			ledcWrite(pwmChannel2, speed - 25); // 1.65 V
+			// delay(20);
+			return 15;
 		}
 		else if (dt.leftFront > LEFT_MAX_THRESHOLD && dt.rightFront < RIGHT_MIN_THRESHOLD)
 		{
-			setDriverVoltages(speed, RIGHT, 25);
+			ledcWrite(pwmChannel1, speed - 25); // 1.65 V
+			ledcWrite(pwmChannel2, speed);		// 1.65 V
+			// delay(20);
+			return 15;
 		}
 		else
 		{
-			setDriverVoltages(speed, FORWARD, 0);
+			ledcWrite(pwmChannel1, speed); // 1.65 V
+			ledcWrite(pwmChannel2, speed); // 1.65 V
 		}
 	}
 	// when only one wall is present
 	else if (dt.rightFront > CELL_SIZE)
 	{
-		if (dt.leftFront > 67)
+		if (dt.leftFront > 57)
 		{
-			return setDriverVoltages(speed, RIGHT, 25);
+			ledcWrite(pwmChannel1, speed - 25); // 1.65 V
+			ledcWrite(pwmChannel2, speed);		// 1.65 V
+			// delay(20);
+			return 15;
 		}
-		else if (dt.leftFront < 57)
+		else if (dt.leftFront < 67)
 		{
-			return setDriverVoltages(speed, LEFT, 25);
+			ledcWrite(pwmChannel1, speed);		// 1.65 V
+			ledcWrite(pwmChannel2, speed - 25); // 1.65 V
+			// delay(20);
+			return 15;
 		}
 		else
 		{
-			setDriverVoltages(speed, FORWARD, 0);
+			ledcWrite(pwmChannel1, speed); // 1.65 V
+			ledcWrite(pwmChannel2, speed); // 1.65 V
 		}
 	}
 	else if (dt.leftFront > CELL_SIZE)
 	{
 		if (dt.rightFront > 47)
 		{
-			return setDriverVoltages(speed, LEFT, 25);
+			ledcWrite(pwmChannel1, speed);		// 1.65 V
+			ledcWrite(pwmChannel2, speed - 25); // 1.65 V
+			// delay(20);
+			return 15;
 		}
 		else if (dt.rightFront < 37)
 		{
-			return setDriverVoltages(speed, RIGHT, 25);
+			ledcWrite(pwmChannel1, speed - 25); // 1.65 V
+			ledcWrite(pwmChannel2, speed);		// 1.65 V
+			// delay(20);
+			return 15;
 		}
 		else
 		{
-			setDriverVoltages(speed, FORWARD, 0);
+			ledcWrite(pwmChannel1, speed); // 1.65 V
+			ledcWrite(pwmChannel2, speed); // 1.65 V
 		}
-	}
-	else if (dt.leftFront > CELL_SIZE && dt.rightFront > CELL_SIZE)
-	{
-		// align with back TOF sensors
-		if (dt.leftBack < LEFT_MIN_THRESHOLD || dt.leftBack > LEFT_MAX_THRESHOLD)
-		{
-			return alignWithBackLeft(speed, dt.leftBack, LEFT_MIN_THRESHOLD, LEFT_MAX_THRESHOLD);
-		}
-		else if (dt.rightBack < LEFT_MIN_THRESHOLD || dt.rightBack > LEFT_MAX_THRESHOLD)
-		{
-			return alignWithBackRight(speed, dt.rightBack, RIGHT_MIN_THRESHOLD, RIGHT_MAX_THRESHOLD);
-		}
-		else
-		{
-			return setDriverVoltages(speed, FORWARD, 0);
-		}
-	}
-	else
-	{
-		setDriverVoltages(speed, FORWARD, 0);
 	}
 	return 0;
 }
@@ -1146,16 +1007,6 @@ void mouseForward()
 		if (dd == -1)
 			break;
 		startTime += dd;
-
-		if (mat.front < FRONT_MIN_DISTANCE)
-		{
-			// reverse the mouse until mouse reaches safe distance from the front wall
-			while (mat.front < FRONT_MIN_DISTANCE)
-			{
-				reverse(REVERSE_SPEED);
-				mat = loadDistances();
-			}
-		}
 	}
 
 	stop();
@@ -1184,13 +1035,10 @@ void searchRun()
 		// set the walls according to this distance
 		if (leftDistance < SIDE_MIN_DISTANCE)
 			setWalls({X, Y}, orient, LEFT);
-		WebSerial.println("Left Wall Setted");
 		if (frontDistance < FRONT_MIN_DISTANCE)
 			setWalls({X, Y}, orient, FORWARD);
-		WebSerial.println("Front Wall Setted");
 		if (rightDistance < SIDE_MIN_DISTANCE)
 			setWalls({X, Y}, orient, RIGHT);
-		WebSerial.println("Right Wall Setted");
 
 		// reset the flood map
 		resetFloodMap();
@@ -1228,8 +1076,6 @@ void searchRun()
 		{
 			break;
 		}
-
-		WebSerial.printf("(%d, %d)\n", X, Y);
 	}
 }
 
@@ -1252,10 +1098,8 @@ void returnToStart()
 	// rotateMouse(RIGHT);
 	rotate180(leftDistance, rightDistance);
 
-	WebSerial.printf("path length: %d\n", pathLength);
 	for (int i = pathLength - 1; i >= 0; i--)
 	{
-		WebSerial.printf("chracter: %c\n", pathString[i]);
 		char c = pathString[i];
 		if (c == 'F')
 		{
@@ -1300,8 +1144,6 @@ void test()
 	int front = measure4.RangeMilliMeter;
 	int left = measure1.RangeMilliMeter;
 	int right = measure3.RangeMilliMeter;
-
-	WebSerial.printf("front : %d, , Left : %d, , Right :  %d\n", front, left, right);
 	delay(100);
 }
 
@@ -1319,8 +1161,6 @@ void followTest()
 	int rightDistance = measure3.RangeMilliMeter;
 	int leftBackDistance = measure2.RangeMilliMeter;
 	int rightBackDistance = measure5.RangeMilliMeter;
-
-	WebSerial.printf("front: %d, left: %d, right: %d, leftBack: %d, rightBack: %d\n", frontDistance, leftDistance, rightDistance, leftBackDistance, rightBackDistance);
 
 	if (frontDistance > CELL_SIZE)
 	{
