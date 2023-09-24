@@ -14,11 +14,11 @@
 
 #define ROUNDS 1
 
-int FINISHING_X =  8;
-int FINISHING_Y = 3;
+int FINISHING_X =  2;
+int FINISHING_Y = 2;
 
 // Time related constants
-#define FORWARD_TIME 2000
+#define FORWARD_TIME 1850
 
 #define ROTATE_TIME 440
 #define ROTATE_SPEED 120
@@ -194,8 +194,8 @@ int pathLength = 0;
 //-----------------------------------------------------------------
 AsyncWebServer server(80);
 
-const char *ssid = "Dialog 4G 801";		 // Your WiFi SSID
-const char *password = "e35076c3"; // Your WiFi Password
+const char *ssid = "Galaxy";		 // Your WiFi SSID
+const char *password = "helloworld"; // Your WiFi Password
 
 void recvMsg(uint8_t *data, size_t len)
 {
